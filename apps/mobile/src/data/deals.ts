@@ -26,6 +26,22 @@ import type {
   Risk,
 } from '@dealpilot/core';
 
+/**
+ * Static, per-deal analyst sub-scores for the Score-Zerlegung bars (0…100).
+ * These are mock "expert" inputs (Rendite / Lage & Markt / Objekt & WEG); the
+ * fourth bar (Doku-Risiken) is NOT stored here — it is derived live from core's
+ * `computeScore().dokuVal`. Colour per bar is derived from the value, so nothing
+ * about the bar colours is hard-coded (see src/lib/detail.ts).
+ */
+export interface ScoreBreakdown {
+  /** Yield sub-score. */
+  rendite: number;
+  /** Location & market sub-score. */
+  lage: number;
+  /** Building & HOA sub-score. */
+  objekt: number;
+}
+
 /** A pipeline entry: a deal id plus its full core state. */
 export interface SeedDeal {
   id: string;
@@ -42,6 +58,13 @@ export interface SeedDeal {
    * not a computed metric) may be overridden here.
    */
   statusLabel?: string;
+  /**
+   * Plausible static German KI verdict (2–3 sentences) shown in the dark
+   * KI-Urteil card on the Übersicht tab. Static mock content, not computed.
+   */
+  verdict: string;
+  /** Static analyst sub-scores feeding the Score-Zerlegung bars. */
+  scoreBreakdown: ScoreBreakdown;
 }
 
 // --- Shared defaults (from the prototype's default `state`) -----------------
@@ -57,6 +80,8 @@ const OWNER: Collaborator = {
 const DEFAULT_CONTACT: Contact = {
   name: 'Martina Krause',
   role: 'Maklerin · Stadthaus Immobilien',
+  phone: '+49 341 5550123',
+  email: 'krause@stadthaus-immobilien.de',
   hasPhoto: false,
 };
 
@@ -181,6 +206,9 @@ export const SEED_DEALS: SeedDeal[] = [
         ],
       },
     ),
+    verdict:
+      'Solide Cashflow-Wohnung in gefragter Leipziger Lage. Die Rendite trägt sich, aber ein vertagter Dachbeschluss drückt den Score — vor Kauf klären. Der Preis wirkt verhandelbar.',
+    scoreBreakdown: { rendite: 82, lage: 88, objekt: 54 },
   },
 
   // In Prüfung — score 61 (yellow), yield 5,1 %, 3 open risks.
@@ -212,6 +240,9 @@ export const SEED_DEALS: SeedDeal[] = [
       },
     ),
     statusLabel: 'teilverm.', // MFH partially let — not expressible via core's enum.
+    verdict:
+      'Renditestarkes Mehrfamilienhaus, aber mit Substanz-Themen: Heizung und Elektrik sind bereits einkalkuliert. Der Teilleerstand bietet Mietsteigerungs-Potenzial, drückt aktuell aber den laufenden Cashflow.',
+    scoreBreakdown: { rendite: 88, lage: 58, objekt: 44 },
   },
 
   // Neu — score 45 (red), yield 3,1 %, 1 open risk.
@@ -238,6 +269,9 @@ export const SEED_DEALS: SeedDeal[] = [
         ],
       },
     ),
+    verdict:
+      'Neuwertige Wohnung in guter Lage, aber teuer eingekauft: Die Kernsanierung des Nachbarblocks und der niedrige Anfangsmietzins drücken die Rendite deutlich unter Marktniveau. Nur bei spürbarem Preisnachlass interessant.',
+    scoreBreakdown: { rendite: 38, lage: 74, objekt: 46 },
   },
 
   // Verhandlung — score 84 (green), yield 4,6 %, 0 open risks.
@@ -266,6 +300,9 @@ export const SEED_DEALS: SeedDeal[] = [
         ],
       },
     ),
+    verdict:
+      'Sehr saubere Akte: alle Prüfpunkte abgehakt, Rücklage ausreichend, keine offenen Risiken. Rendite und Lage passen — ein Deal mit geringem Überraschungspotenzial, der sich für die Verhandlung anbietet.',
+    scoreBreakdown: { rendite: 78, lage: 90, objekt: 86 },
   },
 
   // Verworfen — no score, gray rail, discard note instead of subtitle.
@@ -283,5 +320,8 @@ export const SEED_DEALS: SeedDeal[] = [
       dealStatus: 'verworfen',
     }),
     discardNote: 'Erbpacht + Sonderumlage',
+    verdict:
+      'Verworfen: Das Objekt steht auf Erbpacht, und eine hohe Sonderumlage für die Tiefgarage steht unmittelbar bevor. Beides zusammen macht die Kalkulation unattraktiv — als Referenz archiviert.',
+    scoreBreakdown: { rendite: 40, lage: 62, objekt: 30 },
   },
 ];

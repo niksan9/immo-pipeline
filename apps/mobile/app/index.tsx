@@ -1,12 +1,5 @@
 import * as React from 'react';
-import {
-  Animated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -15,6 +8,7 @@ import { DealRow } from '../src/components/DealRow';
 import { SectionHeader } from '../src/components/SectionHeader';
 import { SearchBar } from '../src/components/SearchBar';
 import { BottomNav } from '../src/components/BottomNav';
+import { Toast, useToast } from '../src/components/Toast';
 import { KebabIcon } from '../src/components/icons';
 import { colors, spacing } from '../src/theme/tokens';
 import { type } from '../src/theme/typography';
@@ -23,27 +17,11 @@ export default function PipelineScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sections, query, setQuery } = useDeals();
-  const [toast, setToast] = React.useState<string | null>(null);
-  const toastOpacity = React.useRef(new Animated.Value(0)).current;
+  const toast = useToast();
 
   const showStub = React.useCallback(
-    (label: string) => {
-      setToast(`${label} · bald verfügbar`);
-      toastOpacity.setValue(0);
-      Animated.timing(toastOpacity, {
-        toValue: 1,
-        duration: 160,
-        useNativeDriver: true,
-      }).start();
-      setTimeout(() => {
-        Animated.timing(toastOpacity, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }).start(() => setToast(null));
-      }, 1800);
-    },
-    [toastOpacity],
+    (label: string) => toast.show(`${label} · bald verfügbar`),
+    [toast],
   );
 
   const openDeal = React.useCallback(
@@ -90,17 +68,7 @@ export default function PipelineScreen() {
         <BottomNav onStub={showStub} />
       </View>
 
-      {toast != null && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.toast,
-            { bottom: insets.bottom + 84, opacity: toastOpacity },
-          ]}
-        >
-          <Text style={styles.toastText}>{toast}</Text>
-        </Animated.View>
-      )}
+      <Toast controller={toast} bottom={insets.bottom + 84} />
     </View>
   );
 }
@@ -123,16 +91,4 @@ const styles = StyleSheet.create({
   },
   list: { flex: 1, backgroundColor: colors.bgApp },
   listContent: { paddingBottom: 8 },
-  toast: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: colors.dark,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 12,
-  },
-  toastText: {
-    ...type.body,
-    color: '#f4f2ef',
-  },
 });

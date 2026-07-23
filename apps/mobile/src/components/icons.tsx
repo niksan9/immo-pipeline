@@ -93,3 +93,122 @@ export function ProfileIcon({ size = 21, color = colors.faintAlt }: IconProps) {
     </Svg>
   );
 }
+
+/** Chevron back (‹) — detail header. */
+export function BackIcon({ size = 22, color = colors.ink }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 22 22" fill="none">
+      <Path
+        d="M13 5l-6 6 6 6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Chevron right (›) — row affordance. */
+export function ChevronRight({ size = 13, color = '#c2bfb8' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 13 13" fill="none">
+      <Path
+        d="M5 2l5 4.5-5 4.5"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Phone handset — contact quick action. */
+export function PhoneIcon({ size = 16, color = colors.greenText }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <Path
+        d="M3 3.5c0 6 3.5 9.5 9.5 9.5l0-2.5-2.5-1-1.5 1.2C6.8 9.6 6 8.2 5.3 6.5L6.5 5 5.5 2.5z"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Envelope — contact quick action. */
+export function MailIcon({ size = 16, color = colors.tealText }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <Rect x={2} y={4} width={12} height={9} rx={1.5} stroke={color} strokeWidth={1.7} />
+      <Path d="M2.5 5l5.5 4 5.5-4" stroke={color} strokeWidth={1.7} />
+    </Svg>
+  );
+}
+
+/** Info (i) — opens the calc explanation. */
+export function InfoIcon({ size = 14, color = '#a8a49c' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+      <Circle cx={7} cy={7} r={5.5} stroke={color} strokeWidth={1.8} />
+      <Path d="M7 6.2v3.4M7 4.4v.1" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Sliders (adjust) — "Annahmen anpassen" button. */
+export function SlidersIcon({ size = 15, color = '#fff' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 15 15" fill="none">
+      <Path d="M2 5h11M2 10h11" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Circle cx={5} cy={5} r={2} fill={color} />
+      <Circle cx={10} cy={10} r={2} fill={color} />
+    </Svg>
+  );
+}
+
+/** Plus (thin) — add measure. */
+export function PlusThin({ size = 14, color = colors.teal }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill={color}>
+      <Rect x={6} y={2} width={2} height={10} rx={1} />
+      <Rect x={2} y={6} width={10} height={2} rx={1} />
+    </Svg>
+  );
+}
+
+/** Minus — stepper decrement. */
+export function MinusIcon({ size = 16, color = colors.ink }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill={color}>
+      <Rect x={3} y={7} width={10} height={2} rx={1} />
+    </Svg>
+  );
+}
+
+/** Plus — stepper increment. */
+export function PlusStepIcon({ size = 16, color = colors.ink }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill={color}>
+      <Rect x={7} y={3} width={2} height={10} rx={1} />
+      <Rect x={3} y={7} width={10} height={2} rx={1} />
+    </Svg>
+  );
+}
+
+/** Check — toast + checklist. */
+export function CheckIcon({ size = 14, color = colors.green }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+      <Path
+        d="M2 7.5l3 3 6.5-8"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}

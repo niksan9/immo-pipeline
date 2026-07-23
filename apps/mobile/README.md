@@ -19,16 +19,25 @@ pnpm --filter @dealpilot/mobile export       # expo export --platform ios (bundl
 app/                       expo-router routes
   _layout.tsx              root: font loading + splash gate + providers + Stack
   index.tsx                Pipeline (Home) screen
-  deal/[id].tsx            stub deal-detail (full detail is a later phase)
+  deal/[id].tsx            Deal-Detail: fixed header + 4 tabs (Übersicht/Kalkulation live)
 src/
   theme/tokens.ts          all design tokens (colors verbatim from the handoff)
   theme/typography.ts      font-family constants + typography presets
-  data/deals.ts            mock deals, seeded from the prototype as core DealStates
-  data/store.tsx           DealsProvider / useDeals (React-context mock store)
+  data/deals.ts            mock deals (core DealStates) + per-deal verdict + score breakdown
+  data/store.tsx           DealsProvider / useDeals: mutable per-deal calc state + actions
   lib/pipeline.ts          pure derivation: core calc/score/format → row view models
-  components/              DealRow, SearchBar, SectionHeader, Avatar, BottomNav, icons
-__tests__/                 pipeline / DealRow / navigation tests
+  lib/detail.ts            pure Deal-Detail view models (score bars, risks, schedule, NK …)
+  components/              DealRow, SearchBar, SectionHeader, Avatar, BottomNav, icons,
+                           Toast, Segmented, Sheet, Slider (shared) + detail/* screens
+__tests__/                 pipeline / DealRow / navigation / detailLib / detail / sheetStore
 ```
+
+Everything the Deal-Detail shows is recomputed from the deal's live `DealState`
+through `@dealpilot/core`. The store is the single source of truth for calc
+inputs (`priceByCase`, `scenario`, `financing`, `costs`, assumptions, `measures`),
+so a change in the Kalkulation tab's Annahmen-Sheet re-derives the Pipeline row's
+score/yield too. The bottom sheet, slider and segmented control are hand-built on
+RN core (`Animated` / `PanResponder`) + `react-native-svg` — no new dependencies.
 
 ## How the pnpm monorepo + Metro is wired
 
@@ -95,8 +104,15 @@ The one display-only override is the MFH's "teilverm." occupancy word — core's
 
 ## Deferred / not yet built
 
-- Deal detail (Übersicht / Kalkulation / Dokumente / Chat tabs) — `deal/[id]` is a
-  title-only stub.
+- **Dokumente** and **Chat** tabs are visual "folgt" stubs (DD checklist, doc
+  viewer, upload flow, and the sourced KI-chat are a later phase).
+- Deal-Detail stub actions surface a toast: the header **⋮**, collaboration
+  **Verwalten**, contact **Anrufen/E-Mail**, risk-row tap ("Risiko-Detail folgt"),
+  and the Cashflow-Hero **info** button (Berechnungen-Sheet).
+- **Per-year manual rent override** (`ANGEPASST` for a hand-edited rent pill) is
+  deferred — only measure-driven adjustments mark a year, matching core's
+  `ScheduleRow.adjusted`. Adding manual overrides needs a per-year input model in
+  the store and would inflate this slice.
 - Bottom-nav **Markt**, **Profil**, and central **+** are non-functional stubs
   (surface a "bald verfügbar" toast).
 - The Pipeline **⋮** action menu (sort Score/Kaufpreis/Datum) is a stub toast.
