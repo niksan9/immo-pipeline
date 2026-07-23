@@ -28,6 +28,15 @@ describe("format helpers (de-DE)", () => {
     expect(formatPercent(6)).toBe("6,0 %");
   });
 
+  it("formatPercent uses a typographic minus for negatives (U+2212)", () => {
+    expect(formatPercent(-1.5)).toBe("−1,5 %");
+    expect(formatPercent(-1.5).charAt(0)).toBe("−");
+    // No ASCII hyphen leaks through.
+    expect(formatPercent(-1.5)).not.toContain("-");
+    // Positive output is unchanged.
+    expect(formatPercent(2.4)).toBe("2,4 %");
+  });
+
   it("formatMono keeps fixed decimals with grouping", () => {
     expect(formatMono(1234.5)).toBe("1.234,50");
     expect(formatMono(1000, 0)).toBe("1.000");

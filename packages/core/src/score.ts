@@ -10,6 +10,7 @@
  */
 
 import type { Risk } from "./types.js";
+import { coveredRiskCost, isResolved } from "./risks.js";
 
 /** Ampel color used across the app. */
 export type AmpelColor = "green" | "yellow" | "red";
@@ -42,11 +43,8 @@ export function scoreColor(scoreVal: number): AmpelColor {
 
 /** Compute score, doku confidence and max price from the risk list. */
 export function computeScore(risks: readonly Risk[]): ScoreResult {
-  const resolvedN = risks.filter((r) => r.status !== "open").length;
-  const totalCovered = risks.reduce(
-    (sum, r) => sum + (r.status === "covered" ? r.appliedCost : 0),
-    0,
-  );
+  const resolvedN = risks.filter((r) => isResolved(r.status)).length;
+  const totalCovered = coveredRiskCost(risks);
 
   const scoreVal = clamp(
     Math.round(74 + resolvedN * 2 - totalCovered / 1500),

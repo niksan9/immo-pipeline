@@ -8,6 +8,13 @@
       "when": 1784801355604,
       "tag": "0000_petite_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784819123770,
+      "tag": "0001_aberrant_starfox",
+      "breakpoints": true
     }
   ]
 }

@@ -33,7 +33,7 @@ describe('persistence module', () => {
   it('round-trips a snapshot through AsyncStorage', async () => {
     const key = storageKeyForUser('user-1');
     const snap: PersistedSnapshot = {
-      version: 1,
+      version: 2,
       seedList: [],
       states: {},
       docs: {},
@@ -42,6 +42,9 @@ describe('persistence module', () => {
       syncMeta: {},
       tombstones: [{ localId: 'x', serverId: 's1' }],
       collabOps: [],
+      dealSeq: 3,
+      chatSeq: 1,
+      collabOpSeq: 0,
     };
     await saveSnapshot(key, snap);
     const loaded = await loadSnapshot(key);

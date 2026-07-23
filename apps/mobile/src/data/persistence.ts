@@ -20,8 +20,16 @@ import type { ChatsState } from "./chats";
 import type { SortMode } from "../lib/pipeline";
 import type { CollabOp, DealSyncMeta, Tombstone } from "../lib/sync";
 
-/** Bump when the shape changes incompatibly (older blobs are then ignored). */
-const SNAPSHOT_VERSION = 1 as const;
+/**
+ * Bump when the shape changes incompatibly (older blobs are then ignored).
+ *
+ * v2: added persisted id counters (`dealSeq`/`chatSeq`/`collabOpSeq`) and the
+ * per-deal server baseline (`DealSyncMeta.baseUpdatedAt`). v1 blobs are dropped
+ * on purpose — their seed sync-meta was `dirty:true`, which under the old engine
+ * would have POSTed demo deals into the real account; discarding them is safe
+ * (the store re-seeds fresh, non-dirty demo data).
+ */
+const SNAPSHOT_VERSION = 2 as const;
 
 const KEY_PREFIX = "dealpilot:store:";
 
@@ -41,6 +49,17 @@ export interface PersistedSnapshot {
   syncMeta: Record<string, DealSyncMeta>;
   tombstones: Tombstone[];
   collabOps: CollabOp[];
+  /** Monotonic id counters, persisted so ids stay unique across app restarts. */
+  dealSeq: number;
+  chatSeq: number;
+  collabOpSeq: number;
+  /**
+   * Collaborator id counter. Optional so pre-existing v2 blobs (written before
+   * collaborators got their own sequence) still load — the store falls back to
+   * 0. Distinct from `dealSeq`: minting a collaborator must not advance the
+   * deal-id sequence.
+   */
+  collabSeq?: number;
 }
 
 /** Load a user's snapshot, or null when absent/corrupt (→ first run → seed). */

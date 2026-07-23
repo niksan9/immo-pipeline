@@ -68,7 +68,10 @@ export const TITLE_MAX = 26;
 export function deriveTitle(currentTitle: string, question: string): string {
   if (currentTitle !== 'Neuer Chat') return currentTitle;
   const t = question.trim();
-  return t.length > TITLE_MAX ? `${t.slice(0, TITLE_MAX)}…` : t;
+  // Truncate by code points (not UTF-16 units) so a trailing emoji / surrogate
+  // pair is never split into a broken half. `Array.from` iterates code points.
+  const cps = Array.from(t);
+  return cps.length > TITLE_MAX ? `${cps.slice(0, TITLE_MAX).join('')}…` : t;
 }
 
 /** Where a tapped source chip should route. */

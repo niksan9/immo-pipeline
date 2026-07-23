@@ -24,6 +24,7 @@ import { colors } from '../src/theme/tokens';
 import {
   API_BASE_URL,
   getSessionCookie,
+  handleExpiredSession,
   useSession,
 } from '../src/lib/auth-client';
 import { AuthGate } from '../src/lib/AuthGate';
@@ -119,6 +120,11 @@ function StoreShell({
         store,
         getCookie: getSessionCookie,
         onStatus: setStatus,
+        // On an expired session (HTTP 401) the engine halts and calls this;
+        // signing out flips the AuthGate back to the sign-in screen.
+        onUnauthorized: () => {
+          void handleExpiredSession();
+        },
       });
       controllerRef.current = controller;
       controller.start();

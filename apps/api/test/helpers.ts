@@ -86,9 +86,13 @@ export async function signin(
 export async function apiRequest(
   method: string,
   path: string,
-  opts: { cookie?: string; body?: unknown } = {},
+  opts: {
+    cookie?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+  } = {},
 ): Promise<Response> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...opts.headers };
   if (opts.cookie) headers["cookie"] = opts.cookie;
   let body: string | undefined;
   if (opts.body !== undefined) {

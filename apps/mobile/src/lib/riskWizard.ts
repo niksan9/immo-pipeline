@@ -7,21 +7,30 @@
  * the <RiskWizard /> component.
  *
  * Extracted rules (from `sendCtx`):
- *   const positive = /übernimmt|übernommen|verkäufer|gutachten|nichts kaputt|
- *                     trocken|saniert|erledigt|kein mangel|niedriger|behoben/
- *   if (userTurns < 2 && !positive)  → clarifying question, no proposal
- *   else if (positive)               → "Kosten entfallen"  (accepted, 0 €)
+ *   if (userTurns < 2 && !relieving) → clarifying question, no proposal
+ *   else if (relieving)              → "Kosten entfallen"  (accepted, 0 €)
  *   else                             → "Kosten reduziert"  (covered, estimate/2)
+ *
+ * The prototype's keyword test matched bare `verkäufer` and bare `niedriger`,
+ * so neutral phrasing like "Ich frage noch beim Verkäufer nach" or "Kosten
+ * könnten niedriger sein" was misclassified as relieving → the wizard proposed
+ * waiving the cost to 0 € on hearsay. The pattern below is tightened to require
+ * genuinely relieving *evidence* (a document, a fix, an assurance) instead.
  */
 
 import type { ContextProposal } from '@dealpilot/core';
 
 /**
  * Relieving-context keyword test. If the user's free text matches, the risk is
- * treated as (at least partly) mitigated. Ported 1:1 from the prototype.
+ * treated as (at least partly) mitigated. Only genuine evidence matches: a
+ * takeover/assurance (`übernimmt`/`übernommen`), a survey (`gutachten`/
+ * `gutachter`), a confirmed condition (`trocken`, `saniert`, `behoben`,
+ * `nichts kaputt`, `kein mangel`, `kein schaden`), or that it is done/proven
+ * (`erledigt`, `nachweislich`). A bare `verkäufer` mention or a vague
+ * `niedriger` no longer waives cost — those fall through to the neutral reply.
  */
 export const RELIEVING_PATTERN =
-  /übernimmt|übernommen|verkäufer|gutachten|nichts kaputt|trocken|saniert|erledigt|kein mangel|niedriger|behoben/;
+  /übernimmt|übernommen|gutachten|gutachter|trocken|saniert|behoben|nichts kaputt|kein mangel|kein schaden|erledigt|nachweislich/;
 
 /** Does the user's message contain relieving context? */
 export function isRelieving(text: string): boolean {

@@ -212,11 +212,31 @@ describe('buildSections — grouping, counters, fixed order', () => {
       ['Neu', 1],
       ['Verhandlung', 1],
       ['Verworfen', 1],
+      // Trailing archive section — empty for the seeds, but always reachable so
+      // a deal marked "Gekauft" is never lost (see the setDealStatus test below).
+      ['Gekauft', 0],
     ]);
     expect(sections[0]!.rows.map((r) => r.id)).toEqual([
       'lindenstrasse-14',
       'gartenweg-3',
     ]);
+  });
+
+  it('keeps a "Gekauft" deal reachable in its trailing section', () => {
+    // Flip a seeded deal to gekauft and re-derive: it must land in the Gekauft
+    // section, not disappear.
+    const bought = deriveRows(SEED_DEALS).map((r) =>
+      r.id === 'suedplatz-7'
+        ? { ...r, dealStatus: 'gekauft' as const }
+        : r,
+    );
+    const sections = buildSections(bought, '');
+    const gekauft = sections.find((s) => s.key === 'gekauft')!;
+    expect(gekauft.rows.map((r) => r.id)).toEqual(['suedplatz-7']);
+    // …and it is no longer counted under Verhandlung.
+    expect(
+      sections.find((s) => s.key === 'verhandlung')!.rows.map((r) => r.id),
+    ).not.toContain('suedplatz-7');
   });
 
   it('hides Verworfen and empty sections while searching', () => {
@@ -262,6 +282,36 @@ describe('sortRows — Score / Kaufpreis / Datum', () => {
     const before = rows.map((r) => r.id);
     sortRows(rows, 'kaufpreis');
     expect(rows.map((r) => r.id)).toEqual(before);
+  });
+
+  it('a NaN kaufpreis sinks to the end without corrupting the order', () => {
+    const withNaN = [
+      { ...rows[0]!, id: 'nan', kaufpreis: Number.NaN },
+      ...rows,
+    ];
+    const sorted = sortRows(withNaN, 'kaufpreis');
+    // The NaN-priced row sorts last; every finite-priced row keeps descending.
+    expect(sorted[sorted.length - 1]!.id).toBe('nan');
+    const finite = sorted.filter((r) => Number.isFinite(r.kaufpreis));
+    for (let i = 1; i < finite.length; i++) {
+      expect(finite[i - 1]!.kaufpreis).toBeGreaterThanOrEqual(finite[i]!.kaufpreis);
+    }
+  });
+
+  it('is stable / total: equal keys break by createdSeq then id, deterministically', () => {
+    // All same price + same createdSeq → the comparator must fall through to id
+    // and never return NaN (which would scramble the order).
+    const tied = ['c', 'a', 'b'].map((id) => ({
+      ...rows[0]!,
+      id,
+      kaufpreis: 100000,
+      createdSeq: 5,
+    }));
+    expect(sortRows(tied, 'kaufpreis').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    // Re-sorting an already-sorted list yields the same order (idempotent).
+    const once = sortRows(rows, 'score').map((r) => r.id);
+    const twice = sortRows(sortRows(rows, 'score'), 'score').map((r) => r.id);
+    expect(twice).toEqual(once);
   });
 });
 

@@ -30,7 +30,9 @@ import type {
 import { applyContextProposal, transitionRisk } from '@dealpilot/core';
 import {
   SEED_DEALS,
+  coerceNonNeg,
   createSeedDeal,
+  uniformPriceByCase,
   type CreateDealInput,
   type SeedDeal,
 } from './deals';
@@ -188,6 +190,9 @@ function seedStates(seeds: SeedDeal[]): Record<string, DealState> {
   for (const s of seeds) {
     out[s.id] = {
       ...s.state,
+      // Clone `deal` too — otherwise the working state aliases the module-level
+      // SEED_DEALS deal object and a master-data edit could leak into the seeds.
+      deal: { ...s.state.deal },
       priceByCase: { ...s.state.priceByCase },
       financing: { ...s.state.financing },
       costs: { ...s.state.costs },
@@ -219,10 +224,17 @@ const SYNCED_VERDICT =
   'Von einem anderen Gerät synchronisiert. Öffne den Deal, um Kennzahlen zu ' +
   'prüfen oder Unterlagen zu ergänzen.';
 
-/** Fresh sync-meta for the seed deals: unpushed + dirty so a first sync POSTs them. */
+/**
+ * Fresh sync-meta for the seed deals. Seeded deals are LOCAL DEMO DATA, so they
+ * start `dirty:false` and are NEVER auto-pushed to the user's real account (a
+ * version bump / corrupt blob must not silently upload demo deals). Editing a
+ * demo deal sets `dirty` via `touchSync`, which intentionally promotes it to a
+ * genuine synced deal (POSTed on the next sync).
+ */
 function seedSyncMeta(seeds: SeedDeal[], now: number): Record<string, DealSyncMeta> {
   const out: Record<string, DealSyncMeta> = {};
-  for (const s of seeds) out[s.id] = { serverId: null, updatedAt: now, dirty: true };
+  for (const s of seeds)
+    out[s.id] = { serverId: null, updatedAt: now, dirty: false, baseUpdatedAt: null };
   return out;
 }
 
@@ -236,6 +248,31 @@ interface StoreInit {
   syncMeta: Record<string, DealSyncMeta>;
   tombstones: Tombstone[];
   collabOps: CollabOp[];
+  // Monotonic id counters — persisted so ids stay unique ACROSS app restarts.
+  // A module-level counter reset to 0 each launch would mint ids that collide
+  // with existing / tombstoned ids (states & syncMeta are keyed by id).
+  dealSeq: number;
+  chatSeq: number;
+  collabOpSeq: number;
+  collabSeq: number;
+}
+
+/**
+ * Largest numeric `-<n>` suffix across live + tombstoned deal ids. Used only as
+ * a defensive fallback for the persisted `dealSeq` (a snapshot that somehow
+ * lacks the counter) so a restart never reuses a suffix and shadows a new deal.
+ */
+function maxDealSuffix(seedList: SeedDeal[], tombstones: Tombstone[]): number {
+  let max = 0;
+  const ids = [
+    ...seedList.map((s) => s.id),
+    ...tombstones.map((t) => t.localId),
+  ];
+  for (const id of ids) {
+    const m = /-(\d+)$/.exec(id);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return max;
 }
 
 function buildInit(
@@ -252,6 +289,14 @@ function buildInit(
       syncMeta: snapshot.syncMeta,
       tombstones: snapshot.tombstones,
       collabOps: snapshot.collabOps,
+      // Continue the counters monotonically after a restart (fallback: derive
+      // from the largest existing suffix so we never reuse an id).
+      dealSeq:
+        snapshot.dealSeq ??
+        maxDealSuffix(snapshot.seedList, snapshot.tombstones),
+      chatSeq: snapshot.chatSeq ?? 0,
+      collabOpSeq: snapshot.collabOpSeq ?? 0,
+      collabSeq: snapshot.collabSeq ?? 0,
     };
   }
   const list = initSeedList(seeds);
@@ -264,6 +309,10 @@ function buildInit(
     syncMeta: seedSyncMeta(list, Date.now()),
     tombstones: [],
     collabOps: [],
+    dealSeq: 0, // true first run
+    chatSeq: 0,
+    collabOpSeq: 0,
+    collabSeq: 0,
   };
 }
 
@@ -272,15 +321,10 @@ function serverRole(role: 'edit' | 'view'): 'editor' | 'viewer' {
   return role === 'edit' ? 'editor' : 'viewer';
 }
 
-/** Monotonic counter for queued collaborator ops (stable ids in tests). */
-let collabOpSeq = 0;
-
-/** Monotonic counter for new chat ids (stable + collision-free in tests). */
-let chatSeq = 0;
-const nextChatId = (prefix: string) => `${prefix}-${(chatSeq += 1)}`;
-
-/** Monotonic counter for new deal ids (stable + collision-free in tests). */
-let dealSeq = 0;
+// NOTE: the deal / chat / collab-op id counters are NOT module-level anymore —
+// a module `let` resets to 0 each app launch, so post-restart ids collided with
+// existing / tombstoned ids. They now live as per-provider refs seeded from the
+// persisted snapshot (see buildInit → StoreInit) and continue monotonically.
 
 /**
  * Independent, mutable copy of the seed list with a `createdSeq` guaranteed on
@@ -373,10 +417,27 @@ export function DealsProvider({
   const onLocalChangeRef = React.useRef(onLocalChange);
   onLocalChangeRef.current = onLocalChange;
 
+  // Monotonic id counters, seeded from the snapshot so ids stay unique across
+  // restarts. Held in refs (not state) — bumping them never needs a re-render,
+  // and every bump is accompanied by a slice setState that re-fires onPersist,
+  // so the latest counter value is always captured in the next snapshot.
+  const dealSeqRef = React.useRef(init.dealSeq);
+  const chatSeqRef = React.useRef(init.chatSeq);
+  const collabOpSeqRef = React.useRef(init.collabOpSeq);
+  const collabSeqRef = React.useRef(init.collabSeq);
+  const nextChatId = (prefix: string) => `${prefix}-${(chatSeqRef.current += 1)}`;
+
   /** Mark a deal as locally changed (bump updatedAt + dirty) and nudge sync. */
   const touchSync = React.useCallback((id: string) => {
     setSyncMeta((prev) => {
-      const cur = prev[id] ?? { serverId: null, updatedAt: 0, dirty: false };
+      const cur = prev[id] ?? {
+        serverId: null,
+        updatedAt: 0,
+        dirty: false,
+        baseUpdatedAt: null,
+      };
+      // Spread keeps serverId + baseUpdatedAt; editing a demo seed here flips
+      // dirty:false → true, promoting it to a genuine synced deal.
       return { ...prev, [id]: { ...cur, updatedAt: Date.now(), dirty: true } };
     });
     onLocalChangeRef.current?.();
@@ -400,6 +461,11 @@ export function DealsProvider({
     setSyncMeta(seedSyncMeta(list, Date.now()));
     setTombstones([]);
     setCollabOps([]);
+    // Fresh seed set → fresh id counters (true first-run values).
+    dealSeqRef.current = 0;
+    chatSeqRef.current = 0;
+    collabOpSeqRef.current = 0;
+    collabSeqRef.current = 0;
   }, [seeds, initialSnapshot]);
 
   /** Immutably replace one deal's state (and mark it dirty for sync). */
@@ -455,6 +521,11 @@ export function DealsProvider({
     [rows, query],
   );
 
+  // Granularity tradeoff: this single context value rebuilds on any deal
+  // mutation (rows/states/docs/chats), so every consumer re-renders. Splitting
+  // it into stable action callbacks + a separately-memoized data slice would cut
+  // re-renders, but that is a wider refactor with real risk of stale closures in
+  // the sync/persist paths — deliberately left as-is (the deal list is small).
   const value = React.useMemo<DealsStore>(
     () => ({
       rows,
@@ -484,7 +555,7 @@ export function DealsProvider({
         update(id, (s) => ({ ...s, measures: [...s.measures, measure] })),
 
       createDeal: (input) => {
-        const id = `${slugify(input.address || input.ort)}-${(dealSeq += 1)}`;
+        const id = `${slugify(input.address || input.ort)}-${(dealSeqRef.current += 1)}`;
         const createdSeq =
           seedList.reduce((m, s) => Math.max(m, s.createdSeq ?? 0), 0) + 1;
         const seed = createSeedDeal(id, input, createdSeq);
@@ -492,10 +563,16 @@ export function DealsProvider({
         setStates((prev) => ({ ...prev, [id]: seed.state }));
         // New deals start with no documents / chats (the Docs & Chat tabs show
         // their empty-state stubs until the user uploads something).
-        // Register sync meta: unpushed + dirty so the next sync POSTs it.
+        // Register sync meta: unpushed + dirty (a genuine user-owned new deal)
+        // so the next sync POSTs it. No server baseline yet.
         setSyncMeta((prev) => ({
           ...prev,
-          [id]: { serverId: null, updatedAt: Date.now(), dirty: true },
+          [id]: {
+            serverId: null,
+            updatedAt: Date.now(),
+            dirty: true,
+            baseUpdatedAt: null,
+          },
         }));
         onLocalChangeRef.current?.();
         return id;
@@ -539,7 +616,10 @@ export function DealsProvider({
       },
       setDealStatus: (id, status) =>
         update(id, (s) => ({ ...s, deal: { ...s.deal, dealStatus: status } })),
-      updateObjektdaten: (id, patch) =>
+      updateObjektdaten: (id, patch) => {
+        // Guard every numeric field so a NaN (empty / malformed input) never
+        // enters DealState / priceByCase and cascades into calc / score / sort.
+        const kaufpreis = coerceNonNeg(patch.kaufpreis);
         update(id, (s) => ({
           ...s,
           deal: {
@@ -547,20 +627,17 @@ export function DealsProvider({
             objektart: patch.objektart,
             address: patch.address.trim() ? patch.address.trim() : undefined,
             ort: patch.ort.trim(),
-            qm: patch.qm,
-            baujahr: patch.baujahr,
-            kaufpreis: patch.kaufpreis,
-            rent: patch.rent,
+            qm: coerceNonNeg(patch.qm),
+            baujahr: coerceNonNeg(patch.baujahr),
+            kaufpreis,
+            rent: coerceNonNeg(patch.rent),
           },
           // Editing the master price resets every scenario price to it so calc,
           // yield and score reflect the new number immediately.
-          priceByCase: {
-            base: patch.kaufpreis,
-            bull: patch.kaufpreis,
-            bear: patch.kaufpreis,
-          },
+          priceByCase: uniformPriceByCase(kaufpreis),
           financing: { ...s.financing, maklerPct: patch.maklerPct },
-        })),
+        }));
+      },
 
       addCollaborator: (id, email, role) => {
         const trimmed = email.trim();
@@ -570,7 +647,9 @@ export function DealsProvider({
           .replace(/[._]/g, ' ')
           .replace(/\b\w/g, (m) => m.toUpperCase());
         const collaborator: Collaborator = {
-          id: `c-${(dealSeq += 1)}`,
+          // Collaborators mint ids from their OWN persisted counter — adding a
+          // collaborator must not advance the deal-id sequence (dealSeqRef).
+          id: `c-${(collabSeqRef.current += 1)}`,
           name,
           email: trimmed,
           role,
@@ -586,7 +665,7 @@ export function DealsProvider({
         setCollabOps((prev) => [
           ...prev,
           {
-            id: `co-${(collabOpSeq += 1)}`,
+            id: `co-${(collabOpSeqRef.current += 1)}`,
             localId: id,
             op: 'add',
             email: trimmed,
@@ -611,7 +690,7 @@ export function DealsProvider({
           setCollabOps((prev) => [
             ...prev,
             {
-              id: `co-${(collabOpSeq += 1)}`,
+              id: `co-${(collabOpSeqRef.current += 1)}`,
               localId: id,
               op: 'remove',
               email: target.email,
@@ -645,8 +724,15 @@ export function DealsProvider({
         updateDocs(id, (d) => {
           const known = new Set(d.present.map((p) => p.id));
           const added = incoming.filter((doc) => !known.has(doc.id));
-          if (added.length === 0) return d;
-          return { ...d, present: [...d.present, ...added] };
+          // An incoming doc that fulfills a still-missing checklist entry must
+          // clear it from `missing` — otherwise ddProgress counts it as both
+          // present AND missing, inflating `total` and double-counting.
+          const incomingIds = new Set(incoming.map((doc) => doc.id));
+          const nextMissing = d.missing.filter((m) => !incomingIds.has(m.id));
+          if (added.length === 0 && nextMissing.length === d.missing.length) {
+            return d;
+          }
+          return { ...d, present: [...d.present, ...added], missing: nextMissing };
         }),
 
       sendChatMessage: (id, text) => {
@@ -728,6 +814,7 @@ export function DealsProvider({
             serverId: null,
             updatedAt: 0,
             dirty: false,
+            baseUpdatedAt: null,
           };
           return {
             localId: s.id,
@@ -735,11 +822,16 @@ export function DealsProvider({
             state: statesRef.current[s.id] ?? s.state,
             updatedAt: m.updatedAt,
             dirty: m.dirty,
+            baseUpdatedAt: m.baseUpdatedAt,
           };
         }),
       getTombstones: () => tombstonesRef.current,
       getCollabOps: () => collabOpsRef.current,
-      applyServerDeal: (serverId, serverState, updatedAt) => {
+      applyServerDeal: (serverId, serverState, serverUpdatedAt) => {
+        // Server state wins: save it and record the server baseline so future
+        // reconciles compare server-vs-server (skew-free). Local `updatedAt` is
+        // reset to the server ms only as an internal rev marker.
+        const updatedAt = new Date(serverUpdatedAt).getTime();
         const existingId = Object.keys(syncMetaRef.current).find(
           (localId) => syncMetaRef.current[localId]?.serverId === serverId,
         );
@@ -752,7 +844,12 @@ export function DealsProvider({
           );
           setSyncMeta((prev) => ({
             ...prev,
-            [existingId]: { serverId, updatedAt, dirty: false },
+            [existingId]: {
+              serverId,
+              updatedAt,
+              dirty: false,
+              baseUpdatedAt: serverUpdatedAt,
+            },
           }));
           return;
         }
@@ -775,19 +872,69 @@ export function DealsProvider({
         setStates((prev) => ({ ...prev, [serverId]: serverState }));
         setSyncMeta((prev) => ({
           ...prev,
-          [serverId]: { serverId, updatedAt, dirty: false },
+          [serverId]: {
+            serverId,
+            updatedAt,
+            dirty: false,
+            baseUpdatedAt: serverUpdatedAt,
+          },
         }));
       },
-      markPushed: (localId, serverId, updatedAt) =>
-        setSyncMeta((prev) =>
-          prev[localId]
-            ? { ...prev, [localId]: { serverId, updatedAt, dirty: false } }
-            : prev,
-        ),
+      markPushed: (localId, serverId, serverUpdatedAt, expectedUpdatedAt) =>
+        setSyncMeta((prev) => {
+          const cur = prev[localId];
+          if (!cur) return prev;
+          // Lost-update guard: only clear dirty if no local edit landed since
+          // the push plan captured this revision. If `updatedAt` moved, an edit
+          // arrived mid-flight → keep dirty:true so it re-syncs. Either way bind
+          // serverId and advance the server baseline to what we just saw.
+          const clean = cur.updatedAt === expectedUpdatedAt;
+          return {
+            ...prev,
+            [localId]: {
+              serverId,
+              updatedAt: cur.updatedAt,
+              dirty: clean ? false : true,
+              baseUpdatedAt: serverUpdatedAt,
+            },
+          };
+        }),
       removeTombstone: (localId) =>
         setTombstones((prev) => prev.filter((t) => t.localId !== localId)),
       removeCollabOp: (opId) =>
         setCollabOps((prev) => prev.filter((o) => o.id !== opId)),
+      dropLocalDeal: (localId) => {
+        // Server deleted it / revoked access → remove every slice with NO
+        // tombstone (nothing to DELETE) and NO onLocalChange (not a user edit).
+        // Offline edits to a concurrently-deleted deal are lost here — the
+        // accepted tradeoff under server-wins-on-delete.
+        setSeedList((prev) => prev.filter((s) => s.id !== localId));
+        setStates((prev) => {
+          if (!prev[localId]) return prev;
+          const next = { ...prev };
+          delete next[localId];
+          return next;
+        });
+        setDocs((prev) => {
+          if (!prev[localId]) return prev;
+          const next = { ...prev };
+          delete next[localId];
+          return next;
+        });
+        setChats((prev) => {
+          if (!prev[localId]) return prev;
+          const next = { ...prev };
+          delete next[localId];
+          return next;
+        });
+        setSyncMeta((prev) => {
+          if (!prev[localId]) return prev;
+          const next = { ...prev };
+          delete next[localId];
+          return next;
+        });
+        setCollabOps((prev) => prev.filter((o) => o.localId !== localId));
+      },
     }),
     [],
   );
@@ -804,7 +951,7 @@ export function DealsProvider({
   onPersistRef.current = onPersist;
   React.useEffect(() => {
     onPersistRef.current?.({
-      version: 1,
+      version: 2,
       seedList,
       states,
       docs,
@@ -813,6 +960,13 @@ export function DealsProvider({
       syncMeta,
       tombstones,
       collabOps,
+      // Snapshot the current id counters so they survive a restart. Refs aren't
+      // effect deps, but every counter bump rides along with a slice change
+      // above, so the freshest value is always captured here.
+      dealSeq: dealSeqRef.current,
+      chatSeq: chatSeqRef.current,
+      collabOpSeq: collabOpSeqRef.current,
+      collabSeq: collabSeqRef.current,
     });
   }, [seedList, states, docs, chats, sortMode, syncMeta, tombstones, collabOps]);
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeScore, scoreColor } from "../src/index.js";
+import { computeScore, scoreColor, coveredRiskCost } from "../src/index.js";
 import { makeRisk } from "./fixtures.js";
 
 describe("computeScore — empty risk list", () => {
@@ -74,6 +74,39 @@ describe("computeScore — color thresholds", () => {
     expect(scoreColor(50)).toBe("yellow");
     expect(scoreColor(49)).toBe("red");
     expect(scoreColor(40)).toBe("red");
+  });
+});
+
+describe("computeScore — covered risk with missing/NaN appliedCost", () => {
+  it("keeps totalCovered and scoreVal finite when a covered cost is NaN", () => {
+    const risks = [
+      makeRisk({ id: "nan", status: "covered", appliedCost: Number.NaN }),
+      makeRisk({ id: "ok", status: "covered", appliedCost: 1500 }),
+    ];
+    const r = computeScore(risks);
+    expect(Number.isFinite(r.totalCovered)).toBe(true);
+    expect(r.totalCovered).toBe(1500); // NaN ignored, valid one counts
+    expect(Number.isFinite(r.scoreVal)).toBe(true);
+    expect(Number.isFinite(r.maxPreis)).toBe(true);
+  });
+});
+
+describe("coveredRiskCost helper", () => {
+  it("sums only covered risks, ignoring open/accepted/question", () => {
+    expect(
+      coveredRiskCost([
+        makeRisk({ id: "a", status: "covered", appliedCost: 2600 }),
+        makeRisk({ id: "b", status: "covered", appliedCost: 800 }),
+        makeRisk({ id: "c", status: "accepted", appliedCost: 0 }),
+        makeRisk({ id: "d", status: "open", appliedCost: 9999 }),
+      ]),
+    ).toBe(3400);
+  });
+
+  it("treats a covered NaN/missing appliedCost as 0 but still counts valid ones", () => {
+    const bad = makeRisk({ id: "nan", status: "covered", appliedCost: Number.NaN });
+    const good = makeRisk({ id: "ok", status: "covered", appliedCost: 500 });
+    expect(coveredRiskCost([bad, good])).toBe(500);
   });
 });
 

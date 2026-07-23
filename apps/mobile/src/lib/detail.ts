@@ -10,10 +10,12 @@
 import {
   buildRentSchedule,
   computeScore,
+  coveredRiskCost,
   formatEUR,
   formatNumber,
   formatPercent,
   formatSignedEUR,
+  isResolved,
   scoreColor,
   SCHEDULE_YEARS,
   type CalcResult,
@@ -148,12 +150,10 @@ function doneRow(r: Risk): RiskRowVM {
 
 /** Group + style the risk list exactly as the prototype's Übersicht does. */
 export function riskGroups(risks: readonly Risk[]): RiskGroups {
-  const open = risks.filter((r) => r.status === 'open');
-  const done = risks.filter((r) => r.status !== 'open');
-  const riskCost = risks.reduce(
-    (sum, r) => sum + (r.status === 'covered' ? r.appliedCost : 0),
-    0,
-  );
+  const open = risks.filter((r) => !isResolved(r.status));
+  const done = risks.filter((r) => isResolved(r.status));
+  // Single source of truth for the covered-risk total (NaN-safe in core).
+  const riskCost = coveredRiskCost(risks);
   return {
     open: open.map(openRow),
     done: done.map(doneRow),
@@ -367,7 +367,7 @@ export function kaufnebenkosten(
 ): KaufnebenkostenLine[] {
   const maklerLabel =
     state.financing.maklerPct > 0
-      ? `${(state.financing.maklerPct * 100).toFixed(2).replace('.', ',')} %`
+      ? formatPercent(state.financing.maklerPct * 100, 2)
       : 'provisionsfrei';
   const lines: KaufnebenkostenLine[] = [
     {
@@ -491,7 +491,7 @@ export function discount(
   const pct = offer > 0 ? (amount / offer) * 100 : 0;
   const str =
     amount > 0
-      ? `−${formatNumber(amount)} € (−${pct.toFixed(1).replace('.', ',')} %)`
+      ? `−${formatNumber(amount)} € (−${formatPercent(pct)})`
       : 'kein Rabatt';
   return { amount, pct, str };
 }

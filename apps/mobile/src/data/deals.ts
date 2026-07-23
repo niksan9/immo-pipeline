@@ -22,9 +22,12 @@ import {
   suggestedAfaSatz,
   type Collaborator,
   type Contact,
+  type Costs,
   type Deal,
   type DealState,
+  type Financing,
   type Objektart,
+  type PriceByCase,
   type Risk,
   type VermietetStatus,
 } from '@dealpilot/core';
@@ -113,7 +116,9 @@ export const NEW_DEAL_BAUJAHR = 1990;
  */
 export function createDealState(input: CreateDealInput): DealState {
   const baujahr = NEW_DEAL_BAUJAHR;
-  const price = input.kaufpreis;
+  // Guard the free-text numeric inputs so a NaN (e.g. from an empty field) never
+  // enters DealState / priceByCase and cascades into calc / score / sorting.
+  const price = coerceNonNeg(input.kaufpreis);
   const address = input.address?.trim();
   const plz = input.plz?.trim();
   const deal: Deal = {
@@ -121,25 +126,25 @@ export function createDealState(input: CreateDealInput): DealState {
     address: address ? address : undefined,
     plz: plz ? plz : undefined,
     ort: input.ort.trim(),
-    qm: input.qm,
+    qm: coerceNonNeg(input.qm),
     baujahr,
     kaufpreis: price,
-    rent: input.rent,
+    rent: coerceNonNeg(input.rent),
     vermietet: input.vermietet,
     dealStatus: 'neu',
   };
   return {
     deal,
-    priceByCase: { base: price, bull: price, bear: price },
+    priceByCase: uniformPriceByCase(price),
     scenario: 'base',
-    financing: { zins: 3.8, tilg: 2.0, ek: 90000, maklerPct: 0.0357 },
-    costs: { hausgeld: 115, ruecklage: 60, verwaltung: 30 },
-    costGrowth: 2.0,
-    wertZuwachs: 2.0,
-    steig: 2.3,
+    financing: { ...DEFAULT_FINANCING },
+    costs: { ...DEFAULT_COSTS },
+    costGrowth: DEFAULT_COST_GROWTH,
+    wertZuwachs: DEFAULT_WERT_ZUWACHS,
+    steig: DEFAULT_STEIG,
     gebaeudewert: Math.round(price * 0.7),
     afaSatz: suggestedAfaSatz(baujahr),
-    steuersatz: 42,
+    steuersatz: DEFAULT_STEUERSATZ,
     measures: [],
     risks: [],
     collaborators: [{ ...OWNER }],
@@ -169,6 +174,41 @@ export function createSeedDeal(
 }
 
 // --- Shared defaults (from the prototype's default `state`) -----------------
+
+/**
+ * Prototype financing defaults (Sollzins / Tilgung / Eigenkapital / Makler).
+ * Shared by `createDealState` and `makeState` so the two never drift apart.
+ */
+export const DEFAULT_FINANCING: Financing = {
+  zins: 3.8,
+  tilg: 2.0,
+  ek: 90000,
+  maklerPct: 0.0357,
+};
+
+/** Prototype laufende-Kosten defaults (Hausgeld / Rücklage / Verwaltung, €/Mo). */
+export const DEFAULT_COSTS: Costs = { hausgeld: 115, ruecklage: 60, verwaltung: 30 };
+
+/** Prototype growth / tax assumptions (percent). */
+export const DEFAULT_COST_GROWTH = 2.0;
+export const DEFAULT_WERT_ZUWACHS = 2.0;
+export const DEFAULT_STEIG = 2.3;
+export const DEFAULT_STEUERSATZ = 42;
+
+/**
+ * Coerce a user-supplied numeric input to a finite, non-negative number,
+ * falling back to `fallback` (default 0) for NaN / Infinity / negatives. Keeps
+ * a stray NaN (e.g. from `Number('')`) out of `DealState` / `priceByCase`,
+ * where it would otherwise cascade into calc / score and corrupt sorting.
+ */
+export function coerceNonNeg(x: number, fallback = 0): number {
+  return Number.isFinite(x) && x >= 0 ? x : fallback;
+}
+
+/** The `{ base, bull, bear }` triple all seeded to the same price. */
+export function uniformPriceByCase(price: number): PriceByCase {
+  return { base: price, bull: price, bear: price };
+}
 
 const OWNER: Collaborator = {
   id: 1,
@@ -295,20 +335,16 @@ function makeState(
 ): DealState {
   return {
     deal,
-    priceByCase: {
-      base: deal.kaufpreis,
-      bull: deal.kaufpreis,
-      bear: deal.kaufpreis,
-    },
+    priceByCase: uniformPriceByCase(deal.kaufpreis),
     scenario: 'base',
-    financing: { zins: 3.8, tilg: 2.0, ek: 90000, maklerPct: 0.0357 },
-    costs: { hausgeld: 115, ruecklage: 60, verwaltung: 30 },
-    costGrowth: 2.0,
-    wertZuwachs: 2.0,
-    steig: 2.3,
+    financing: { ...DEFAULT_FINANCING },
+    costs: { ...DEFAULT_COSTS },
+    costGrowth: DEFAULT_COST_GROWTH,
+    wertZuwachs: DEFAULT_WERT_ZUWACHS,
+    steig: DEFAULT_STEIG,
     gebaeudewert: 132000,
     afaSatz: 2.0,
-    steuersatz: 42,
+    steuersatz: DEFAULT_STEUERSATZ,
     measures: [],
     risks: opts.risks ?? [],
     collaborators: opts.collaborators ?? [OWNER],

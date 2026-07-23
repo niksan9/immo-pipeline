@@ -63,6 +63,15 @@ describe('deriveTitle — only while still "Neuer Chat"', () => {
   it('keeps an already-named chat title unchanged', () => {
     expect(deriveTitle('Dach-Risiko klären', 'egal was')).toBe('Dach-Risiko klären');
   });
+
+  it('truncates by code point so an emoji at the boundary is never split', () => {
+    // 26 astral emoji then more text: cut after 26 whole emoji, no lone surrogate.
+    const q = '🏠'.repeat(26) + ' und noch viel mehr Text';
+    const title = deriveTitle('Neuer Chat', q);
+    expect(title).toBe('🏠'.repeat(26) + '…');
+    // No unpaired surrogate leaked in (would make the string longer per code pt).
+    expect(Array.from(title)).toHaveLength(27); // 26 emoji + the ellipsis
+  });
 });
 
 describe('classifySource — tap target resolution', () => {

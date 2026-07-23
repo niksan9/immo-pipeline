@@ -18,30 +18,38 @@ describe('isRelieving — keyword rules', () => {
   const relieving = [
     'Der Verkäufer übernimmt die Kosten',
     'Das Dach ist laut Gutachten trocken',
+    'Der Gutachter bestätigt es',
     'Wurde bereits saniert',
     'Der Schaden ist behoben',
     'Es ist nichts kaputt',
     'kein Mangel festgestellt',
-    'Der Betrag ist niedriger als geschätzt',
+    'kein Schaden vorhanden',
+    'nachweislich in Ordnung',
     'Das hat der Verkäufer schon erledigt',
   ];
   const neutral = [
     'Ich habe noch keine Unterlagen dazu',
     'Der Nachbar meinte irgendwas',
     'Weiß ich nicht genau',
+    // Tightened: a bare seller mention / a vague "niedriger" is NOT evidence —
+    // these previously matched `verkäufer` / `niedriger` and wrongly waived cost.
+    'Ich frage noch beim Verkäufer nach',
+    'Ich frage den Verkäufer',
+    'Kosten könnten niedriger sein',
+    'Der Betrag ist niedriger als geschätzt',
   ];
 
   it('matches every relieving phrase (case-insensitive)', () => {
     for (const t of relieving) expect(isRelieving(t)).toBe(true);
   });
 
-  it('does not match neutral phrases', () => {
+  it('does not match neutral phrases (incl. bare seller / "niedriger")', () => {
     for (const t of neutral) expect(isRelieving(t)).toBe(false);
   });
 
-  it('exposes the exact pattern ported from the prototype', () => {
+  it('exposes the tightened evidence-only pattern', () => {
     expect(RELIEVING_PATTERN.source).toBe(
-      'übernimmt|übernommen|verkäufer|gutachten|nichts kaputt|trocken|saniert|erledigt|kein mangel|niedriger|behoben',
+      'übernimmt|übernommen|gutachten|gutachter|trocken|saniert|behoben|nichts kaputt|kein mangel|kein schaden|erledigt|nachweislich',
     );
   });
 });
@@ -80,6 +88,50 @@ describe('respondToContext — proposal generation', () => {
   it('rounds a halved odd estimate', () => {
     const res = respondToContext({ text: 'unklar', userTurns: 2, estimate: 9500 });
     expect(res.proposal?.cost).toBe(4750);
+  });
+
+  it('a neutral seller mention does NOT waive cost (falls through)', () => {
+    // First turn: clarifying question, no proposal.
+    const first = respondToContext({
+      text: 'ich frage den Verkäufer',
+      userTurns: 1,
+      estimate: 2600,
+    });
+    expect(first.proposal).toBeNull();
+    expect(first.reply).toMatch(/schriftlich/i);
+
+    // Second turn, still no evidence: a REDUCTION (covered), never a 0 € waiver.
+    const second = respondToContext({
+      text: 'ich frage den Verkäufer nochmal',
+      userTurns: 2,
+      estimate: 2600,
+    });
+    expect(second.proposal?.status).toBe('covered');
+    expect(second.proposal?.cost).toBe(1300);
+    expect(second.proposal?.label).not.toBe('Kosten entfallen');
+  });
+
+  it('a vague "niedriger" does NOT waive cost', () => {
+    const res = respondToContext({
+      text: 'die Kosten könnten niedriger sein',
+      userTurns: 1,
+      estimate: 2600,
+    });
+    expect(res.proposal).toBeNull();
+  });
+
+  it('genuine evidence still waives cost (accepted, 0 €)', () => {
+    const res = respondToContext({
+      text: 'Der Verkäufer übernimmt das laut Kaufvertrag',
+      userTurns: 1,
+      estimate: 2600,
+    });
+    expect(res.proposal).toEqual({
+      label: 'Kosten entfallen',
+      status: 'accepted',
+      cost: 0,
+      note: 'Der Verkäufer übernimmt das laut Kaufvertrag',
+    });
   });
 });
 

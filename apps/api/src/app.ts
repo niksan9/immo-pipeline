@@ -108,7 +108,7 @@ export function createApp({ auth, db }: AppDeps) {
     return c.json({ deals: rows });
   });
 
-  // ---- POST /api/deals — create ----
+  // ---- POST /api/deals — create (optionally idempotent) ----
   api.post("/deals", async (c) => {
     const uid = c.get("user").id;
     const body = await c.req.json().catch(() => null);
@@ -117,10 +117,26 @@ export function createApp({ auth, db }: AppDeps) {
     }
     const state = body as DealState;
     const d = denormalize(state);
+
+    // Optional idempotency: the client sends its local deal id as an opaque
+    // key. A replay of the same (owner, key) returns the already-created deal
+    // (200) instead of inserting a duplicate. Absent header → plain create.
+    const idempotencyKey = c.req.header("X-Idempotency-Key");
+    if (idempotencyKey) {
+      const existing = await db.query.deals.findFirst({
+        where: and(
+          eq(deals.ownerId, uid),
+          eq(deals.clientId, idempotencyKey),
+        ),
+      });
+      if (existing) return c.json({ deal: existing }, 200);
+    }
+
     const [row] = await db
       .insert(deals)
       .values({
         ownerId: uid,
+        clientId: idempotencyKey ?? null,
         dealStatus: d.dealStatus,
         state,
         title: d.title,
@@ -215,18 +231,17 @@ export function createApp({ auth, db }: AppDeps) {
     if (invitee.id === uid) {
       return c.json({ error: "Owner cannot be a collaborator" }, 400);
     }
-    // Upsert-ish: remove any existing row, then insert with the new role.
-    await db
-      .delete(dealCollaborators)
-      .where(
-        and(
-          eq(dealCollaborators.dealId, id),
-          eq(dealCollaborators.userId, invitee.id),
-        ),
-      );
+    // Atomic upsert: a single INSERT ... ON CONFLICT keyed on the
+    // (deal_id, user_id) primary key. Re-inviting the same user updates their
+    // role (and re-stamps invitedAt) in one statement — no DELETE-then-INSERT
+    // window in which a concurrent request could double-insert or lose a row.
     const [row] = await db
       .insert(dealCollaborators)
       .values({ dealId: id, userId: invitee.id, role })
+      .onConflictDoUpdate({
+        target: [dealCollaborators.dealId, dealCollaborators.userId],
+        set: { role, invitedAt: new Date() },
+      })
       .returning();
     return c.json({ collaborator: row }, 201);
   });

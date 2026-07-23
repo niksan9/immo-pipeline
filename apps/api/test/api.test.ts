@@ -7,6 +7,7 @@ import {
   closeDb,
   signin,
   signup,
+  sql,
   truncateAll,
 } from "./helpers.js";
 
@@ -443,5 +444,168 @@ describe("collaborators", () => {
       cookie: collab.cookie,
     });
     expect(get.status).toBe(404);
+  });
+
+  it("re-inviting the same user is idempotent: one row, role updated", async () => {
+    const owner = await signup(uniqueEmail("owner"));
+    const collab = await signup(uniqueEmail("collab"));
+    const created = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      body: baseState(),
+    });
+    const id = ((await created.json()) as { deal: { id: string } }).deal.id;
+
+    const first = await apiRequest("POST", `/api/deals/${id}/collaborators`, {
+      cookie: owner.cookie,
+      body: { email: collab.email, role: "viewer" },
+    });
+    expect(first.status).toBe(201);
+    expect(
+      ((await first.json()) as { collaborator: { role: string } }).collaborator
+        .role,
+    ).toBe("viewer");
+
+    // Re-invite the same user with a different role.
+    const second = await apiRequest("POST", `/api/deals/${id}/collaborators`, {
+      cookie: owner.cookie,
+      body: { email: collab.email, role: "editor" },
+    });
+    expect(second.status).toBe(201);
+    expect(
+      ((await second.json()) as { collaborator: { role: string } })
+        .collaborator.role,
+    ).toBe("editor");
+
+    // Exactly one row exists for this (deal, user) pair, with the new role.
+    const rows = await sql/* sql */ `
+      SELECT role FROM deal_collaborators WHERE deal_id = ${id}`;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.role).toBe("editor");
+
+    // And the effective access reflects the updated role.
+    const get = await apiRequest("GET", `/api/deals/${id}`, {
+      cookie: collab.cookie,
+    });
+    expect(((await get.json()) as { role: string }).role).toBe("editor");
+  });
+});
+
+describe("deep validation (malformed payloads → 400, not 500)", () => {
+  // Each case is a deal body that would previously have crashed the handler.
+  const cases: Array<[string, () => unknown]> = [
+    ["non-string address", () => baseState({ address: 123 as never })],
+    ["out-of-range kaufpreis (1e15)", () => baseState({ kaufpreis: 1e15 })],
+    ["NaN kaufpreis", () => baseState({ kaufpreis: Number.NaN })],
+    [
+      "covered risk missing appliedCost",
+      () => {
+        const body = baseState() as unknown as { risks: unknown[] };
+        body.risks = [
+          { id: "r1", title: "Dach", status: "covered" }, // no appliedCost
+        ];
+        return body;
+      },
+    ],
+  ];
+
+  it("POST rejects each malformed body with 400", async () => {
+    const owner = await signup(uniqueEmail());
+    for (const [label, make] of cases) {
+      const res = await apiRequest("POST", "/api/deals", {
+        cookie: owner.cookie,
+        body: make(),
+      });
+      expect(res.status, label).toBe(400);
+    }
+  });
+
+  it("PUT rejects each malformed body with 400", async () => {
+    const owner = await signup(uniqueEmail());
+    const created = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      body: baseState(),
+    });
+    const id = ((await created.json()) as { deal: { id: string } }).deal.id;
+    for (const [label, make] of cases) {
+      const res = await apiRequest("PUT", `/api/deals/${id}`, {
+        cookie: owner.cookie,
+        body: make(),
+      });
+      expect(res.status, label).toBe(400);
+    }
+  });
+});
+
+describe("idempotent deal creation (X-Idempotency-Key)", () => {
+  it("replaying the same key returns the same deal (200, no duplicate)", async () => {
+    const owner = await signup(uniqueEmail());
+    const key = `local-deal-${Date.now()}`;
+
+    const first = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      headers: { "X-Idempotency-Key": key },
+      body: baseState(),
+    });
+    expect(first.status).toBe(201);
+    const firstId = ((await first.json()) as { deal: { id: string } }).deal.id;
+
+    const second = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      headers: { "X-Idempotency-Key": key },
+      body: baseState({ ort: "Ignored On Replay" }),
+    });
+    expect(second.status).toBe(200);
+    const secondId = ((await second.json()) as { deal: { id: string } }).deal
+      .id;
+
+    expect(secondId).toBe(firstId);
+
+    // Only one row was created for this owner.
+    const rows = await sql/* sql */ `
+      SELECT id FROM deals WHERE owner_id = ${owner.id}`;
+    expect(rows).toHaveLength(1);
+  });
+
+  it("POST without the header still creates (201) and does not dedupe", async () => {
+    const owner = await signup(uniqueEmail());
+    const a = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      body: baseState(),
+    });
+    const b = await apiRequest("POST", "/api/deals", {
+      cookie: owner.cookie,
+      body: baseState(),
+    });
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+    const aId = ((await a.json()) as { deal: { id: string } }).deal.id;
+    const bId = ((await b.json()) as { deal: { id: string } }).deal.id;
+    expect(aId).not.toBe(bId);
+
+    const rows = await sql/* sql */ `
+      SELECT id FROM deals WHERE owner_id = ${owner.id}`;
+    expect(rows).toHaveLength(2);
+  });
+
+  it("the same key for two different owners does not collide", async () => {
+    const owner1 = await signup(uniqueEmail("o1"));
+    const owner2 = await signup(uniqueEmail("o2"));
+    const key = "shared-local-id";
+
+    const r1 = await apiRequest("POST", "/api/deals", {
+      cookie: owner1.cookie,
+      headers: { "X-Idempotency-Key": key },
+      body: baseState(),
+    });
+    const r2 = await apiRequest("POST", "/api/deals", {
+      cookie: owner2.cookie,
+      headers: { "X-Idempotency-Key": key },
+      body: baseState(),
+    });
+    expect(r1.status).toBe(201);
+    expect(r2.status).toBe(201);
+    const id1 = ((await r1.json()) as { deal: { id: string } }).deal.id;
+    const id2 = ((await r2.json()) as { deal: { id: string } }).deal.id;
+    expect(id1).not.toBe(id2);
   });
 });

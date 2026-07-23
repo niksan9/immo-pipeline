@@ -68,8 +68,9 @@ export const NEW_CHAT_INTRO =
  * Fresh, independent chat state for a deal. Every deal gets a generic
  * "Allgemein" thread; deals whose risk list contains a Dach risk additionally
  * get the prototype's "Dach-Risiko klären" thread linked to that risk (this is
- * the Lindenstraße seed). The Dach thread is listed first and is the active one,
- * matching the prototype's ordering.
+ * the Lindenstraße seed). The Dach thread is listed first (it leads the
+ * Chat-Verlauf list), but the generic "Allgemein" thread is the ACTIVE one the
+ * Chat tab opens on — matching the prototype's `activeChatId`.
  */
 export function seedChatsState(seed: SeedDeal): ChatsState {
   const threads: ChatThread[] = [

@@ -48,3 +48,19 @@ export function getSessionCookie(): string {
     return "";
   }
 }
+
+/**
+ * Handle an expired / invalid session, wired to the sync engine's
+ * `onUnauthorized` callback (fired on an HTTP 401 from the deal API). Signs the
+ * user out so the {@link AuthGate} redirects to the sign-in screen instead of
+ * the engine hammering the server with a doomed retry loop. Best-effort: even
+ * if the sign-out network call fails, control returns without throwing.
+ */
+export async function handleExpiredSession(): Promise<void> {
+  try {
+    await signOut();
+  } catch {
+    // Best-effort: a failed sign-out request must not wedge the app; the local
+    // session is dropped either way and the user lands back on sign-in.
+  }
+}

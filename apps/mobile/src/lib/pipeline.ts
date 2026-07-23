@@ -16,6 +16,7 @@ import {
   computeScore,
   formatEUR,
   formatPercent,
+  isResolved,
   scoreColor,
   type AmpelColor,
   type DealStatus,
@@ -25,12 +26,18 @@ import {
 import { colors } from '../theme/tokens';
 import type { SeedDeal } from '../data/deals';
 
-/** Fixed section order shown in the pipeline (matches the design). */
+/**
+ * Fixed section order shown in the pipeline (matches the design). `gekauft` is a
+ * real `DealStatus` and a `setDealStatus` target, so it MUST appear here or a
+ * deal marked "Gekauft" would vanish from the pipeline entirely — it trails as
+ * an archive-style section at the end.
+ */
 export const SECTION_ORDER: DealStatus[] = [
   'pruefung',
   'neu',
   'verhandlung',
   'verworfen',
+  'gekauft',
 ];
 
 export const SECTION_LABEL: Record<DealStatus, string> = {
@@ -140,7 +147,7 @@ export function deriveRow(seed: SeedDeal): DealRowVM {
   const priceStr = formatEUR(deal.kaufpreis);
   const yieldStr = formatPercent(metrics.brutto);
 
-  const openRiskCount = state.risks.filter((r) => r.status === 'open').length;
+  const openRiskCount = state.risks.filter((r) => !isResolved(r.status)).length;
 
   const sharedInitials = state.collaborators
     .filter((c) => c.role !== 'owner')
@@ -219,25 +226,47 @@ export const SORT_LABEL: Record<SortMode, string> = {
 };
 
 /**
+ * Descending comparator for a numeric key (higher first). Missing / NaN /
+ * Infinity keys are treated as -Infinity so they sort LAST, and equal keys
+ * return exactly 0 — so the comparator is total, transitive and NEVER returns
+ * NaN (a NaN comparator result corrupts Array.prototype.sort's ordering).
+ */
+function byDesc(a: number, b: number): number {
+  const av = Number.isFinite(a) ? a : -Infinity;
+  const bv = Number.isFinite(b) ? b : -Infinity;
+  if (av === bv) return 0;
+  return av > bv ? -1 : 1;
+}
+
+/**
+ * Stable tiebreak: newest `createdSeq` first, then by id (ascending) so the
+ * final order is fully deterministic even when the primary key ties.
+ */
+function tiebreak(a: DealRowVM, b: DealRowVM): number {
+  return (
+    byDesc(a.createdSeq, b.createdSeq) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
+}
+
+/**
  * Sort rows for display. Sorting is applied across the whole list *before*
  * grouping, so ordering is preserved inside each fixed status section:
  *  - score:    highest score first (discarded rows, score null, sink to the end),
- *  - kaufpreis: highest price first,
+ *  - kaufpreis: highest price first (missing / NaN price sinks to the end),
  *  - datum:    newest (highest createdSeq) first.
- * Ties break by createdSeq (newest first) for a stable, deterministic order.
+ * Ties break by createdSeq (newest first) then id, for a stable, total order.
  */
 export function sortRows(rows: DealRowVM[], mode: SortMode): DealRowVM[] {
   const out = [...rows];
   out.sort((a, b) => {
     if (mode === 'kaufpreis') {
-      return b.kaufpreis - a.kaufpreis || b.createdSeq - a.createdSeq;
+      return byDesc(a.kaufpreis, b.kaufpreis) || tiebreak(a, b);
     }
     if (mode === 'datum') {
-      return b.createdSeq - a.createdSeq;
+      return tiebreak(a, b);
     }
-    const sa = a.score ?? -Infinity;
-    const sb = b.score ?? -Infinity;
-    return sb - sa || b.createdSeq - a.createdSeq;
+    return byDesc(a.score ?? -Infinity, b.score ?? -Infinity) || tiebreak(a, b);
   });
   return out;
 }

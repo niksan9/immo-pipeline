@@ -3,6 +3,11 @@
  * sign-up screens based on the current session. Rendered once, alongside the
  * root navigator. Extracted from the layout so the redirect logic is unit
  * testable without booting the whole Stack.
+ *
+ * This is also the mechanism behind the sync engine's 401 handling: when the
+ * API rejects our session, the engine's `onUnauthorized` callback signs the
+ * user out (see auth-client `handleExpiredSession`), which flips `authed` to
+ * false here and redirects to sign-in — no infinite retry loop.
  */
 import * as React from 'react';
 import { useRouter, useSegments } from 'expo-router';

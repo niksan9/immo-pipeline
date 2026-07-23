@@ -12,8 +12,10 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -28,22 +30,34 @@ import { user } from "./auth-schema";
  * `DealState` from @dealpilot/core is stored verbatim in `state` (jsonb).
  * The scalar columns are denormalized copies for cheap list rendering.
  */
-export const deals = pgTable("deals", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  ownerId: text("owner_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  dealStatus: text("deal_status").notNull(),
-  // Full client-authoritative deal state.
-  state: jsonb("state").notNull().$type<DealState>(),
-  // Denormalized listing columns.
-  title: text("title"),
-  ort: text("ort"),
-  kaufpreis: integer("kaufpreis"),
-  score: integer("score"),
-});
+export const deals = pgTable(
+  "deals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    dealStatus: text("deal_status").notNull(),
+    // Full client-authoritative deal state.
+    state: jsonb("state").notNull().$type<DealState>(),
+    // Opaque client-supplied idempotency key (the app's local deal id), sent as
+    // the `X-Idempotency-Key` header on POST /api/deals. Nullable: only set when
+    // the client opts into idempotent creation. Scoped per owner via the unique
+    // index below (multiple NULLs are allowed in Postgres, so un-keyed creates
+    // never collide).
+    clientId: text("client_id"),
+    // Denormalized listing columns.
+    title: text("title"),
+    ort: text("ort"),
+    kaufpreis: integer("kaufpreis"),
+    score: integer("score"),
+  },
+  (t) => [
+    uniqueIndex("deals_owner_id_client_id_unique").on(t.ownerId, t.clientId),
+  ],
+);
 
 export type DealRow = typeof deals.$inferSelect;
 export type NewDealRow = typeof deals.$inferInsert;
@@ -51,16 +65,22 @@ export type NewDealRow = typeof deals.$inferInsert;
 export type CollaboratorRole = "editor" | "viewer";
 
 /** A user granted access to a deal they do not own. */
-export const dealCollaborators = pgTable("deal_collaborators", {
-  dealId: uuid("deal_id")
-    .notNull()
-    .references(() => deals.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  role: text("role").$type<CollaboratorRole>().notNull(),
-  invitedAt: timestamp("invited_at").notNull().defaultNow(),
-});
+export const dealCollaborators = pgTable(
+  "deal_collaborators",
+  {
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").$type<CollaboratorRole>().notNull(),
+    invitedAt: timestamp("invited_at").notNull().defaultNow(),
+  },
+  // A (deal, user) pair can appear at most once. This composite primary key is
+  // what makes the invite upsert (onConflictDoUpdate) atomic and race-free.
+  (t) => [primaryKey({ columns: [t.dealId, t.userId] })],
+);
 
 export type CollaboratorRow = typeof dealCollaborators.$inferSelect;
 export type NewCollaboratorRow = typeof dealCollaborators.$inferInsert;

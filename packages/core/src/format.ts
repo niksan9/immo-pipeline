@@ -25,9 +25,16 @@ export function formatSignedEUR(n: number): string {
   return `${sign}${formatNumber(Math.abs(r))} €`;
 }
 
-/** Percentage with one decimal and a de-DE comma, e.g. 3.8 → "3,8 %". */
+/**
+ * Percentage with one decimal and a de-DE comma, e.g. 3.8 → "3,8 %".
+ * Negative values use the typographic minus (−, U+2212) to match
+ * `formatSignedEUR`, e.g. -1.5 → "−1,5 %" (not the ASCII hyphen).
+ */
 export function formatPercent(n: number, decimals = 1): string {
-  return `${n.toFixed(decimals).replace(".", ",")} %`;
+  return `${n
+    .toFixed(decimals)
+    .replace(".", ",")
+    .replace("-", "−")} %`;
 }
 
 /**

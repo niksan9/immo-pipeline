@@ -8,6 +8,7 @@
  */
 
 import type { DealState, Scenario } from "./types.js";
+import { coveredRiskCost } from "./risks.js";
 
 /** Scenario factor applied to the base rent. */
 export const SCENARIO_FACTOR: Record<Scenario, number> = {
@@ -105,11 +106,8 @@ export function calc(state: DealState, options: CalcOptions = {}): CalcResult {
 
   const rent = rentBase * SCENARIO_FACTOR[scenario];
 
-  // Only covered risks contribute their appliedCost.
-  const riskCost = state.risks.reduce(
-    (sum, r) => sum + (r.status === "covered" ? r.appliedCost : 0),
-    0,
-  );
+  // Only covered risks contribute their appliedCost (missing/NaN → 0).
+  const riskCost = coveredRiskCost(state.risks);
 
   const GIK = preis + NK + riskCost;
   const ek = Math.min(financing.ek, GIK);
@@ -131,9 +129,11 @@ export function calc(state: DealState, options: CalcOptions = {}): CalcResult {
 
   const vermoegenszuwachs = cashflow + tilgMonat + wertzuwachsM + steuerMonat;
 
-  const brutto = ((rent * 12) / preis) * 100;
-  const netto = ((rent * 12 - nkMonat * 12) / GIK) * 100;
-  const faktor = preis / (rent * 12);
+  // Guard the yield divisions: a zero denominator (e.g. rent=0 for an
+  // unlet unit, or a zero price) would otherwise yield Infinity/NaN.
+  const brutto = preis > 0 ? ((rent * 12) / preis) * 100 : 0;
+  const netto = GIK > 0 ? ((rent * 12 - nkMonat * 12) / GIK) * 100 : 0;
+  const faktor = rent > 0 ? preis / (rent * 12) : 0;
 
   const ekRendite =
     ek > 0 ? ((cashflow * 12 + tilgMonat * 12 + preis * 0.02) / ek) * 100 : 0;

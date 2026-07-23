@@ -139,6 +139,80 @@ describe("calc — riskCost only counts covered", () => {
   });
 });
 
+describe("calc — covered risk with missing/NaN appliedCost", () => {
+  it("treats a covered risk with NaN appliedCost as 0 (riskCost stays finite)", () => {
+    const s = baseState();
+    s.risks = [
+      makeRisk({ id: "nan", status: "covered", appliedCost: Number.NaN }),
+      makeRisk({ id: "ok", status: "covered", appliedCost: 800 }),
+    ];
+    const c = calc(s);
+    expect(Number.isFinite(c.riskCost)).toBe(true);
+    expect(c.riskCost).toBe(800); // NaN one ignored, valid one counts
+    // The NaN must not cascade into any downstream metric.
+    expect(Number.isFinite(c.GIK)).toBe(true);
+    expect(Number.isFinite(c.netto)).toBe(true);
+    expect(Number.isFinite(c.cashflow)).toBe(true);
+  });
+
+  it("treats a covered risk with a missing appliedCost as 0", () => {
+    const s = baseState();
+    const r = makeRisk({ id: "miss", status: "covered", appliedCost: 1000 });
+    // Simulate a malformed record where appliedCost is absent.
+    delete (r as Partial<typeof r>).appliedCost;
+    s.risks = [r];
+    const c = calc(s);
+    expect(c.riskCost).toBe(0);
+    expect(Number.isFinite(c.GIK)).toBe(true);
+  });
+});
+
+describe("calc — div-by-zero guards", () => {
+  it("rent = 0 → faktor 0 and brutto 0 (unlet unit)", () => {
+    const s = baseState();
+    s.deal = { ...s.deal, rent: 0 };
+    const c = calc(s);
+    expect(c.rent).toBe(0);
+    expect(c.faktor).toBe(0);
+    expect(c.brutto).toBe(0);
+    expect(Number.isFinite(c.netto)).toBe(true);
+  });
+
+  it("preis = 0 → brutto 0, netto still finite", () => {
+    const s = baseState();
+    s.priceByCase = { base: 0, bull: 0, bear: 0 };
+    const c = calc(s);
+    expect(c.preis).toBe(0);
+    expect(c.brutto).toBe(0);
+    expect(Number.isFinite(c.netto)).toBe(true);
+    expect(Number.isFinite(c.faktor)).toBe(true);
+  });
+
+  it("GIK = 0 (preis 0, no NK, no rent) → netto 0", () => {
+    const s = baseState();
+    s.priceByCase = { base: 0, bull: 0, bear: 0 };
+    s.financing = { ...s.financing, maklerPct: 0 };
+    s.deal = { ...s.deal, rent: 0 };
+    const c = calc(s);
+    expect(c.GIK).toBe(0);
+    expect(c.netto).toBe(0);
+    expect(c.brutto).toBe(0);
+    expect(c.faktor).toBe(0);
+  });
+
+  it("no calc field is NaN/Infinity for a fully-zero deal", () => {
+    const s = baseState();
+    s.priceByCase = { base: 0, bull: 0, bear: 0 };
+    s.financing = { ...s.financing, maklerPct: 0, ek: 0 };
+    s.deal = { ...s.deal, rent: 0 };
+    s.gebaeudewert = 0;
+    const c = calc(s);
+    for (const [k, v] of Object.entries(c)) {
+      expect(Number.isFinite(v), `field ${k} = ${v}`).toBe(true);
+    }
+  });
+});
+
 describe("calc — provisionsfrei and negative cashflow", () => {
   it("maklerPct = 0 removes the makler component from NK", () => {
     const s = baseState();

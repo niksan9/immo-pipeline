@@ -24,6 +24,22 @@ export function isResolved(status: RiskStatus): boolean {
   return status !== "open";
 }
 
+/**
+ * Sum of `appliedCost` across covered risks (EUR).
+ *
+ * Only `covered` risks contribute, and a missing / non-numeric `appliedCost`
+ * is treated as 0 (the prototype's `(r.appliedCost || 0)` guard). This is the
+ * single source of truth for the covered-risk total — calc.ts, score.ts and
+ * the mobile app all use it, so a stray NaN can never cascade into GIK / score.
+ */
+export function coveredRiskCost(risks: readonly Risk[]): number {
+  return risks.reduce(
+    (sum, r) =>
+      sum + (r.status === "covered" && Number.isFinite(r.appliedCost) ? r.appliedCost : 0),
+    0,
+  );
+}
+
 /** Whether a transition from `from` to `to` is allowed. */
 export function isValidTransition(from: RiskStatus, to: RiskStatus): boolean {
   if (to === "open") {
