@@ -19,6 +19,7 @@ import {
   type CalcResult,
   type DealState,
   type Risk,
+  type RiskStatus,
   type Scenario,
 } from '@dealpilot/core';
 import { colors } from '../theme/tokens';
@@ -163,6 +164,130 @@ export function riskGroups(risks: readonly Risk[]): RiskGroups {
     riskCost,
     riskCostStr: `−${formatNumber(riskCost)} €`,
   };
+}
+
+// --- Risiko-Detail (lifecycle screen) ---------------------------------------
+
+/** Status-badge appearance per lifecycle state (README "3. Risiko-Detail"). */
+export interface RiskStatusBadge {
+  text: string;
+  /** Badge label colour. */
+  textColor: string;
+  /** Badge background. */
+  bgColor: string;
+  /** Leading dot colour. */
+  dotColor: string;
+  /** OFFEN → red pulsing-ring dot. */
+  pulsing: boolean;
+  /** Resolved states are read-only → show a lock icon. */
+  locked: boolean;
+}
+
+/**
+ * Status badge variant per state, transcribed from the prototype's `statusMeta`
+ * map in DealPilot.dc.html (text / textColor / bgColor / dotColor):
+ *   open     → OFFEN · SCHWEBEND            (muted text, neutral bg, red dot, pulsing)
+ *   covered  → IN KOSTEN ÜBERNOMMEN         (red)
+ *   accepted → AKZEPTIERT · KOSTEN ENTFALLEN (green)
+ *   question → FRAGE AN VERKÄUFER OFFEN      (muted text, gray dot)
+ * Every state except "open" is resolved → read-only (lock icon).
+ */
+export function riskStatusBadge(status: RiskStatus): RiskStatusBadge {
+  switch (status) {
+    case 'open':
+      return {
+        text: 'OFFEN · SCHWEBEND',
+        textColor: colors.muted,
+        bgColor: colors.chipBgAlt,
+        dotColor: colors.red,
+        pulsing: true,
+        locked: false,
+      };
+    case 'covered':
+      return {
+        text: 'IN KOSTEN ÜBERNOMMEN',
+        textColor: colors.red,
+        bgColor: colors.redSoft,
+        dotColor: colors.red,
+        pulsing: false,
+        locked: true,
+      };
+    case 'accepted':
+      return {
+        text: 'AKZEPTIERT · KOSTEN ENTFALLEN',
+        textColor: colors.greenText,
+        bgColor: colors.greenSoft,
+        dotColor: colors.greenText,
+        pulsing: false,
+        locked: true,
+      };
+    case 'question':
+      return {
+        text: 'FRAGE AN VERKÄUFER OFFEN',
+        textColor: colors.muted,
+        bgColor: colors.chipBgAlt,
+        dotColor: colors.muted2,
+        pulsing: false,
+        locked: true,
+      };
+  }
+}
+
+/** The "Effekt-Zeile" showing whether/how the risk hits the calculation. */
+export interface RiskEffectVM {
+  /** open = "KI-Schätzung · dein Anteil"; resolved = "Wirkung auf Kalkulation". */
+  label: string;
+  /** open only: "zählt noch nicht in die Kalkulation". */
+  sub?: string;
+  /** open ~estimate · covered −applied · accepted 0 € · question "offen". */
+  amountStr: string;
+  amountColor: string;
+  /** open → dashed border (does not count yet); resolved → solid. */
+  dashed: boolean;
+}
+
+export function riskEffect(risk: Risk): RiskEffectVM {
+  switch (risk.status) {
+    case 'open':
+      return {
+        label: 'KI-Schätzung · dein Anteil',
+        sub: 'zählt noch nicht in die Kalkulation',
+        amountStr: `~${formatNumber(risk.estimate)} €`,
+        amountColor: colors.muted2,
+        dashed: true,
+      };
+    case 'covered':
+      return {
+        label: 'Wirkung auf Kalkulation',
+        amountStr: `−${formatNumber(risk.appliedCost)} €`,
+        amountColor: colors.red,
+        dashed: false,
+      };
+    case 'accepted':
+      return {
+        label: 'Wirkung auf Kalkulation',
+        amountStr: '0 €',
+        amountColor: colors.greenText,
+        dashed: false,
+      };
+    case 'question':
+      return {
+        label: 'Wirkung auf Kalkulation',
+        amountStr: 'offen',
+        amountColor: colors.muted2,
+        dashed: false,
+      };
+  }
+}
+
+/** Whether the teal "Bausachverständigen dazuholen" affiliate CTA shows. */
+export function showSurveyorCTA(risk: Risk): boolean {
+  return risk.status === 'open' && risk.big === true;
+}
+
+/** "~2.600 €" estimate label used in the wizard's cover option. */
+export function estimateStr(risk: Risk): string {
+  return `~${formatNumber(risk.estimate)} €`;
 }
 
 // --- Cashflow-Hero + Kennzahl grid ------------------------------------------

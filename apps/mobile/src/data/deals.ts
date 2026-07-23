@@ -85,33 +85,57 @@ const DEFAULT_CONTACT: Contact = {
   hasPhoto: false,
 };
 
+/**
+ * Extra source-backed detail a risk can carry (all optional). Split out so the
+ * builders below stay readable while still letting each seeded risk supply the
+ * verbatim quote / Fundstelle / context the Risiko-Detail screen renders.
+ */
+interface RiskExtras {
+  description?: string;
+  /** Verbatim quote proving the finding ("Fundstelle"). */
+  quote?: string;
+  /** Human-readable source reference (document · page · section). */
+  source?: string;
+  /** Total WEG-wide figure, if known (EUR). */
+  gesamt?: number;
+  /** Whether this is a "big" risk (offers the surveyor affiliate CTA). */
+  big?: boolean;
+  /** Free-text context captured in the wizard's context dialog. */
+  context?: string;
+  /** Optional surveyor attached during resolution. */
+  surveyor?: string | null;
+}
+
 /** Risk-array builders (status → appliedCost follows the core state machine). */
 function openRisk(
   id: string,
   severity: Risk['severity'],
   title: string,
   estimate: number,
+  extras: RiskExtras = {},
 ): Risk {
   return {
     id,
     title,
-    description: '',
+    description: extras.description ?? '',
     severity,
     estimate,
     status: 'open',
     appliedCost: 0,
+    ...extras,
   };
 }
 
-function acceptedRisk(id: string, title: string): Risk {
+function acceptedRisk(id: string, title: string, extras: RiskExtras = {}): Risk {
   return {
     id,
     title,
-    description: '',
+    description: extras.description ?? '',
     severity: 'a',
     estimate: 0,
     status: 'accepted',
     appliedCost: 0,
+    ...extras,
   };
 }
 
@@ -120,15 +144,39 @@ function coveredRisk(
   severity: Risk['severity'],
   title: string,
   cost: number,
+  extras: RiskExtras = {},
 ): Risk {
   return {
     id,
     title,
-    description: '',
+    description: extras.description ?? '',
     severity,
     estimate: cost,
     status: 'covered',
     appliedCost: cost,
+    ...extras,
+  };
+}
+
+/**
+ * A risk parked as an open question to the seller ("Frage an Verkäufer offen").
+ * Resolved for scoring purposes (status ≠ open) but contributes 0 to GIK.
+ */
+function questionRisk(
+  id: string,
+  severity: Risk['severity'],
+  title: string,
+  extras: RiskExtras = {},
+): Risk {
+  return {
+    id,
+    title,
+    description: extras.description ?? '',
+    severity,
+    estimate: 0,
+    status: 'question',
+    appliedCost: 0,
+    ...extras,
   };
 }
 
@@ -189,10 +237,33 @@ export const SEED_DEALS: SeedDeal[] = [
         // resolvedN = 2 accepted, totalCovered = 0 → score 74 + 4 = 78.
         // 2 open risks → "2 Risiken".
         risks: [
-          openRisk('dach', 'r', 'Marodes Dach – Sanierung vertagt', 2600),
-          openRisk('verzug', 'r', '2 Eigentümer in Zahlungsverzug', 800),
-          acceptedRisk('teilung', 'Sondernutzung Garten geklärt'),
-          acceptedRisk('grundbuch', 'Grundbuch unauffällig'),
+          openRisk('dach', 'r', 'Marodes Dach – Sanierung vertagt', 2600, {
+            description:
+              'Die Eigentümerversammlung hat die notwendige Dachsanierung erneut vertagt. Eine Sonderumlage ist in den nächsten 2–3 Jahren sehr wahrscheinlich; dein Anteil richtet sich nach den Miteigentumsanteilen (MEA 82/1000).',
+            quote:
+              '„TOP 7 – Antrag Dachsanierung: Die Versammlung beschließt mehrheitlich, die Sanierung auf die nächste ordentliche ETV zu vertagen. Angebot liegt bei ca. 118.000 € (Gesamt-WEG)."',
+            source: 'ETV-Protokoll 2025 · Seite 3 · TOP 7',
+            gesamt: 118000,
+            big: true,
+          }),
+          openRisk('verzug', 'r', '2 Eigentümer in Zahlungsverzug', 800, {
+            description:
+              'Zwei Einheiten sind mit dem Hausgeld im Rückstand. Das erhöht das Risiko einer Nachschusspflicht der übrigen Eigentümer.',
+            quote:
+              '„TOP 4 – Der Verwalter berichtet über Hausgeldrückstände zweier Einheiten in Höhe von insgesamt ~9.600 €."',
+            source: 'ETV-Protokoll 2025 · Seite 4 · TOP 4',
+            gesamt: 9600,
+          }),
+          acceptedRisk('teilung', 'Sondernutzung Garten geklärt', {
+            description:
+              'Die Zuordnung des Gartens als Sondernutzungsrecht war zunächst unklar, ist inzwischen aber belegt.',
+            context:
+              'Verkäufer hat den Nachtrag zur Teilungserklärung geschickt: Das Sondernutzungsrecht am Garten ist der Einheit fest zugeordnet und im Grundbuch (Abt. II) eingetragen.',
+          }),
+          acceptedRisk('grundbuch', 'Grundbuch unauffällig', {
+            description:
+              'Der aktuelle Grundbuchauszug zeigt keine belastenden Eintragungen in Abteilung II oder III außer der finanzierenden Grundschuld.',
+          }),
         ],
         collaborators: [
           OWNER,
@@ -230,12 +301,53 @@ export const SEED_DEALS: SeedDeal[] = [
         // resolvedN = 3 covered, totalCovered = 28.500 → 74 + 6 − 19 = 61.
         // 3 open risks → "3 Risiken".
         risks: [
-          coveredRisk('heizung', 'r', 'Heizungsanlage am Lebensende', 12000),
-          coveredRisk('elektrik', 'r', 'Elektrik nicht normgerecht', 9500),
-          coveredRisk('fassade', 'a', 'Fassade rissig', 7000),
-          openRisk('leerstand', 'a', 'Teilleerstand 2 Einheiten', 4000),
-          openRisk('ruecklage', 'a', 'Instandhaltungsrücklage knapp', 0),
-          openRisk('mietspiegel', 'a', 'Mieten über Mietspiegel', 0),
+          coveredRisk('heizung', 'r', 'Heizungsanlage am Lebensende', 12000, {
+            description:
+              'Die zentrale Gasheizung ist Baujahr 1998 und laut Gutachter am Ende der Nutzungsdauer. Ein Austausch inkl. hydraulischem Abgleich ist mittelfristig unvermeidbar.',
+            quote:
+              '„Wärmeerzeuger (Bj. 1998) technisch verschlissen; Austausch innerhalb der nächsten 2 Jahre empfohlen. Kostenrahmen 22.000–26.000 € (Gesamt-WEG)."',
+            source: 'Sachverständigen-Gutachten Heizung · Seite 4',
+            gesamt: 24000,
+            big: true,
+            surveyor: 'J. Berger (Sachverständiger)',
+            context:
+              'Gutachten liegt vor; angesetzter Anteil entspricht der auf die Einheit entfallenden Umlage.',
+          }),
+          coveredRisk('elektrik', 'r', 'Elektrik nicht normgerecht', 9500, {
+            description:
+              'Die Elektroinstallation entspricht in Teilen nicht mehr der aktuellen Norm (keine FI-Schutzschalter in allen Stromkreisen).',
+            quote:
+              '„E-Check: In 3 von 6 Einheiten fehlen RCD/FI-Schutzeinrichtungen; Nachrüstung erforderlich."',
+            source: 'E-Check-Bericht 2024 · Seite 2',
+            gesamt: 19000,
+            big: true,
+          }),
+          coveredRisk('fassade', 'a', 'Fassade rissig', 7000, {
+            description:
+              'Der Wirtschaftsplan nennt eine geplante Sonderumlage für die Fassadeninstandsetzung.',
+            quote:
+              '„Für die anstehende Fassadeninstandsetzung ist eine Sonderumlage vorgesehen."',
+            source: 'Wirtschaftsplan 2025 · Seite 2',
+            gesamt: 54000,
+          }),
+          openRisk('leerstand', 'a', 'Teilleerstand 2 Einheiten', 4000, {
+            description:
+              'Zwei der sechs Einheiten stehen aktuell leer. Mietausfall bis zur Neuvermietung ist einzuplanen, bietet aber Mietsteigerungs-Potenzial.',
+            quote:
+              '„Einheiten 3 und 5 sind zum Stichtag nicht vermietet (Leerstand seit 4 bzw. 7 Monaten)."',
+            source: 'Mieterliste · Stand 03/2025',
+            big: true,
+          }),
+          openRisk('ruecklage', 'a', 'Instandhaltungsrücklage knapp', 0, {
+            description:
+              'Die Instandhaltungsrücklage ist im Verhältnis zum Objekt eher niedrig.',
+            quote: '„Stand Instandhaltungsrücklage zum 31.12.: 42.000 €."',
+            source: 'Wirtschaftsplan 2025 · Seite 1',
+          }),
+          openRisk('mietspiegel', 'a', 'Mieten über Mietspiegel', 0, {
+            description:
+              'Einzelne Bestandsmieten liegen oberhalb des örtlichen Mietspiegels; bei Neuvermietung droht eine Absenkung.',
+          }),
         ],
       },
     ),
@@ -264,8 +376,22 @@ export const SEED_DEALS: SeedDeal[] = [
         // resolvedN = 1 covered, totalCovered = 46.500 → 74 + 2 − 31 = 45.
         // 1 open risk → "1 Risiko".
         risks: [
-          coveredRisk('sanierung', 'r', 'Kernsanierung erforderlich', 46500),
-          openRisk('bebauung', 'r', 'Bebauungsplan-Änderung geplant', 0),
+          coveredRisk('sanierung', 'r', 'Kernsanierung erforderlich', 46500, {
+            description:
+              'Das Bewertungsgutachten stuft die Wohnung als kernsanierungsbedürftig ein (Bäder, Leitungen, Bodenbeläge). Der Betrag ist bereits vollständig in die Kalkulation übernommen.',
+            quote:
+              '„Objektzustand: einfach. Für eine marktgängige Vermietung ist eine Kernsanierung (Bäder, Elektro, Bodenbeläge) mit ~46.500 € zu veranschlagen."',
+            source: 'Wertgutachten 2025 · Seite 6',
+            gesamt: 46500,
+            big: true,
+          }),
+          openRisk('bebauung', 'r', 'Bebauungsplan-Änderung geplant', 0, {
+            description:
+              'Die Stadt plant eine Änderung des Bebauungsplans für das Nachbargrundstück; Auswirkungen auf Belichtung und Lärm sind noch offen.',
+            quote:
+              '„Aufstellungsbeschluss B-Plan Nr. 214: Nachverdichtung mit bis zu 5 Geschossen vorgesehen."',
+            source: 'Amtsblatt · Bekanntmachung 04/2025',
+          }),
         ],
       },
     ),
@@ -290,13 +416,20 @@ export const SEED_DEALS: SeedDeal[] = [
         dealStatus: 'verhandlung',
       },
       {
-        // resolvedN = 5 accepted, totalCovered = 0 → 74 + 10 = 84. 0 open risks.
+        // resolvedN = 5 resolved (4 accepted + 1 question), totalCovered = 0
+        // → 74 + 10 = 84. 0 open risks (a question is resolved, not open).
         risks: [
           acceptedRisk('r1', 'Grundbuch geprüft'),
           acceptedRisk('r2', 'Teilungserklärung geprüft'),
           acceptedRisk('r3', 'Rücklage ausreichend'),
           acceptedRisk('r4', 'Energieausweis vorhanden'),
-          acceptedRisk('r5', 'Protokolle unauffällig'),
+          questionRisk('r5', 'a', 'Wohnflächen-Abweichung geklärt?', {
+            description:
+              'Die im Exposé genannte Wohnfläche weicht rechnerisch leicht von der Teilungserklärung ab. Wir haben den Verkäufer um eine verbindliche Aufmaß-Bestätigung gebeten.',
+            quote:
+              '„Wohnfläche lt. Exposé 82 m²; lt. Teilungserklärung 79,6 m²."',
+            source: 'Exposé · Teilungserklärung · Vergleich',
+          }),
         ],
       },
     ),

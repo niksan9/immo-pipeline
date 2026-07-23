@@ -26,6 +26,8 @@ export interface OverviewTabProps {
   score: number | null;
   color: AmpelColor | null;
   onToast: (msg: string) => void;
+  /** Open the Risiko-Detail screen for a risk id. */
+  onRiskPress: (riskId: string) => void;
 }
 
 interface Step {
@@ -47,6 +49,7 @@ export function OverviewTab({
   score,
   color,
   onToast,
+  onRiskPress,
 }: OverviewTabProps) {
   const { maxPreis } = computeScore(state.risks);
   const bars = scoreBars(state.risks, breakdown);
@@ -190,7 +193,7 @@ export function OverviewTab({
               </Text>
             </View>
             {groups.open.map((r) => (
-              <RiskRow key={r.id} row={r} onTap={() => onToast('Risiko-Detail folgt')} />
+              <RiskRow key={r.id} row={r} onTap={() => onRiskPress(r.id)} />
             ))}
           </>
         )}
@@ -202,12 +205,7 @@ export function OverviewTab({
               </Text>
             </View>
             {groups.done.map((r) => (
-              <RiskRow
-                key={r.id}
-                row={r}
-                dim
-                onTap={() => onToast('Risiko-Detail folgt')}
-              />
+              <RiskRow key={r.id} row={r} dim onTap={() => onRiskPress(r.id)} />
             ))}
           </>
         )}

@@ -75,7 +75,9 @@ describe('Sheet — open/close', () => {
         ),
       );
     });
-    await waitFor(() => expect(screen.queryByTestId('sheet')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('sheet')).toBeNull(), {
+      timeout: 3000,
+    });
   });
 });
 

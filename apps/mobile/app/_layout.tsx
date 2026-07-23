@@ -61,7 +61,8 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" />
-            <Stack.Screen name="deal/[id]" />
+            <Stack.Screen name="deal/[id]/index" />
+            <Stack.Screen name="deal/[id]/risk/[riskId]" />
           </Stack>
         </DealsProvider>
       </SafeAreaProvider>

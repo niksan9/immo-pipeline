@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }));
 
-import DealDetailScreen from '../app/deal/[id]';
+import DealDetailScreen from '../app/deal/[id]/index';
 import { DealsProvider } from '../src/data/store';
 import { SEED_DEALS } from '../src/data/deals';
 import { colors } from '../src/theme/tokens';

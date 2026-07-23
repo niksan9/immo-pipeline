@@ -15,12 +15,16 @@
 
 import * as React from 'react';
 import type {
+  ContextProposal,
   Costs,
   DealState,
   Financing,
   Measure,
+  Risk,
+  RiskStatus,
   Scenario,
 } from '@dealpilot/core';
+import { applyContextProposal, transitionRisk } from '@dealpilot/core';
 import { SEED_DEALS, type SeedDeal } from './deals';
 import {
   buildSections,
@@ -61,6 +65,23 @@ interface DealsStore {
   patchCosts: (id: string, patch: Partial<Costs>) => void;
   patchAssumptions: (id: string, patch: AssumptionPatch) => void;
   addMeasure: (id: string, measure: Measure) => void;
+
+  // --- Risk lifecycle (all delegate to @dealpilot/core's state machine) ---
+  /**
+   * Move one risk to a new status via core's `transitionRisk`
+   * (covered → appliedCost = estimate, accepted/question/open → 0). Throws
+   * `InvalidRiskTransitionError` on an illegal transition (e.g. open → open).
+   */
+  transitionRisk: (id: string, riskId: string, to: RiskStatus) => void;
+  /**
+   * Apply a wizard context-dialog proposal via core's `applyContextProposal`
+   * (lets the proposal override appliedCost and attach a context note).
+   */
+  applyRiskContext: (
+    id: string,
+    riskId: string,
+    proposal: ContextProposal,
+  ) => void;
 }
 
 const DealsContext = React.createContext<DealsStore | null>(null);
@@ -147,6 +168,21 @@ export function DealsProvider({
       patchAssumptions: (id, patch) => update(id, (s) => ({ ...s, ...patch })),
       addMeasure: (id, measure) =>
         update(id, (s) => ({ ...s, measures: [...s.measures, measure] })),
+
+      transitionRisk: (id, riskId, to) =>
+        update(id, (s) => ({
+          ...s,
+          risks: s.risks.map((r: Risk) =>
+            r.id === riskId ? transitionRisk(r, to) : r,
+          ),
+        })),
+      applyRiskContext: (id, riskId, proposal) =>
+        update(id, (s) => ({
+          ...s,
+          risks: s.risks.map((r: Risk) =>
+            r.id === riskId ? applyContextProposal(r, proposal) : r,
+          ),
+        })),
     }),
     [rows, query, sections, seeds, states, update],
   );

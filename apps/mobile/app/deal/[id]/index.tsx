@@ -2,7 +2,8 @@
  * Deal-Detail screen: fixed header (score / title / meta / price + tab bar) over
  * four tabs — Übersicht, Kalkulation (both fully live via @dealpilot/core),
  * Dokumente and Chat (visual stubs). All calc state lives in the store, so edits
- * here re-derive the pipeline row too.
+ * here re-derive the pipeline row too. Tapping a risk row opens the nested
+ * Risiko-Detail route (/deal/[id]/risk/[riskId]).
  */
 
 import * as React from 'react';
@@ -18,17 +19,17 @@ import {
   type Scenario,
 } from '@dealpilot/core';
 
-import { useDeals } from '../../src/data/store';
-import { colors } from '../../src/theme/tokens';
-import { type } from '../../src/theme/typography';
-import { Toast, useToast } from '../../src/components/Toast';
+import { useDeals } from '../../../src/data/store';
+import { colors } from '../../../src/theme/tokens';
+import { type } from '../../../src/theme/typography';
+import { Toast, useToast } from '../../../src/components/Toast';
 import {
   DetailHeader,
   type DetailTab,
-} from '../../src/components/detail/DetailHeader';
-import { OverviewTab } from '../../src/components/detail/OverviewTab';
-import { CalcTab, type CalcActions } from '../../src/components/detail/CalcTab';
-import { StubTab } from '../../src/components/detail/StubTab';
+} from '../../../src/components/detail/DetailHeader';
+import { OverviewTab } from '../../../src/components/detail/OverviewTab';
+import { CalcTab, type CalcActions } from '../../../src/components/detail/CalcTab';
+import { StubTab } from '../../../src/components/detail/StubTab';
 
 export default function DealDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -53,6 +54,11 @@ export default function DealDetailScreen() {
       addMeasure: (m: Measure) => store.addMeasure(dealId, m),
     }),
     [store, dealId],
+  );
+
+  const openRisk = React.useCallback(
+    (riskId: string) => router.push(`/deal/${dealId}/risk/${riskId}`),
+    [router, dealId],
   );
 
   if (!seed || !state) {
@@ -99,6 +105,7 @@ export default function DealDetailScreen() {
             score={score}
             color={color}
             onToast={toast.show}
+            onRiskPress={openRisk}
           />
         )}
         {tab === 'calc' && (

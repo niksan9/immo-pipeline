@@ -212,3 +212,84 @@ export function CheckIcon({ size = 14, color = colors.green }: IconProps) {
     </Svg>
   );
 }
+
+/** Padlock — resolved (read-only) risk states. */
+export function LockIcon({ size = 15, color = colors.faintAlt }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 15 15" fill="none">
+      <Rect x={3} y={7} width={9} height={6} rx={1.5} stroke={color} strokeWidth={1.8} />
+      <Path d="M5 7V5a2.5 2.5 0 015 0v2" stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+/** Document (page) — Fundstelle source line. */
+export function DocIcon({ size = 12, color = colors.muted2 }: IconProps) {
+  return (
+    <Svg width={size} height={(size * 13) / 12} viewBox="0 0 12 13" fill="none">
+      <Path d="M2.5 1h5l2.5 2.5v8.5h-7.5z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Shield — surveyor / Bausachverständigen affiliate. */
+export function ShieldIcon({ size = 18, color = '#fff' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+      <Path
+        d="M9 2l6 3v4c0 4-3 6-6 7-3-1-6-3-6-7V5z"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Circular refresh arrows — "Aktualisieren". */
+export function RefreshIcon({ size = 14, color = colors.tealText }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+      <Path d="M3 4v3h3M13 10V7h-3" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M4 7a5 5 0 019-1M12 7a5 5 0 01-9 1" stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+/** Counter-clock arrow — "Neu eröffnen" (reopen). */
+export function ReopenIcon({ size = 14, color = colors.ink2 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+      <Path d="M7 2a5 5 0 105 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M7 4V.5M9 5h3.5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Up-arrow — chat send button. */
+export function SendIcon({ size = 19, color = '#fff' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 19 19" fill="none">
+      <Path d="M9.5 15V4M5 8.5l4.5-4.5 4.5 4.5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Speech bubble — wizard "Kontext geben" option. */
+export function BubbleIcon({ size = 16, color = colors.tealText }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <Path d="M2 3h12v8H8l-3 3v-3H2z" stroke={color} strokeWidth={1.9} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Clock — wizard "Fragen an Verkäufer" option. */
+export function ClockIcon({ size = 16, color = colors.muted }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <Circle cx={8} cy={8} r={6} stroke={color} strokeWidth={1.9} />
+      <Path d="M8 5v3l2 2" stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
