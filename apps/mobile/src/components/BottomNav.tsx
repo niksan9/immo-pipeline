@@ -7,13 +7,15 @@ import { MarketIcon, PipelineIcon, PlusIcon, ProfileIcon } from './icons';
 export interface BottomNavProps {
   /** Non-functional stubs surface a small hint via this callback. */
   onStub?: (label: string) => void;
+  /** Central + button — opens the "Deal anlegen" overlay. */
+  onNewDeal?: () => void;
 }
 
 /**
  * Bottom navigation: Pipeline · Markt · + (central, emphasized) · Profil.
- * Markt / Profil / + are non-functional stubs for now.
+ * Markt / Profil are non-functional stubs; + opens the create overlay.
  */
-export function BottomNav({ onStub }: BottomNavProps) {
+export function BottomNav({ onStub, onNewDeal }: BottomNavProps) {
   return (
     <View style={styles.nav}>
       <View style={styles.item}>
@@ -33,9 +35,10 @@ export function BottomNav({ onStub }: BottomNavProps) {
 
       <Pressable
         style={styles.plus}
-        onPress={() => onStub?.('Neuer Deal')}
+        onPress={onNewDeal}
         accessibilityRole="button"
         accessibilityLabel="Neuer Deal"
+        testID="nav-new-deal"
       >
         <PlusIcon />
       </Pressable>

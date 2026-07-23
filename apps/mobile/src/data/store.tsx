@@ -15,17 +15,25 @@
 
 import * as React from 'react';
 import type {
+  Collaborator,
   ContextProposal,
   Costs,
   DealState,
+  DealStatus,
   Financing,
   Measure,
+  Objektart,
   Risk,
   RiskStatus,
   Scenario,
 } from '@dealpilot/core';
 import { applyContextProposal, transitionRisk } from '@dealpilot/core';
-import { SEED_DEALS, type SeedDeal } from './deals';
+import {
+  SEED_DEALS,
+  createSeedDeal,
+  type CreateDealInput,
+  type SeedDeal,
+} from './deals';
 import {
   seedDocsState,
   type DealDocument,
@@ -41,8 +49,10 @@ import { deriveTitle, type ChatReply } from '../lib/chat';
 import {
   buildSections,
   deriveRows,
+  sortRows,
   type DealRowVM,
   type PipelineSection,
+  type SortMode,
 } from '../lib/pipeline';
 
 /** Assumption fields (non-financing) editable in the Annahmen-Sheet. */
@@ -58,11 +68,28 @@ export type AssumptionPatch = Partial<
   >
 >;
 
+/** Master-data patch saved from the Objektdaten-Sheet (README 7). */
+export interface ObjektdatenInput {
+  objektart: Objektart;
+  /** Straße & Nr. (empty string clears it). */
+  address: string;
+  ort: string;
+  qm: number;
+  baujahr: number;
+  kaufpreis: number;
+  rent: number;
+  /** Makler commission as a decimal fraction (0 = provisionsfrei). */
+  maklerPct: number;
+}
+
 interface DealsStore {
   rows: DealRowVM[];
   query: string;
   setQuery: (q: string) => void;
   sections: PipelineSection[];
+  /** Active pipeline sort (⋮ action menu). */
+  sortMode: SortMode;
+  setSortMode: (mode: SortMode) => void;
   getSeed: (id: string) => SeedDeal | undefined;
   getRow: (id: string) => DealRowVM | undefined;
 
@@ -80,6 +107,26 @@ interface DealsStore {
   patchCosts: (id: string, patch: Partial<Costs>) => void;
   patchAssumptions: (id: string, patch: AssumptionPatch) => void;
   addMeasure: (id: string, measure: Measure) => void;
+
+  // --- Deal lifecycle (create / delete / status / master data) ---
+  /** Create a full DealState from the manual form; returns the new deal id. */
+  createDeal: (input: CreateDealInput) => string;
+  /** Remove a deal (and its doc / chat slices) entirely. */
+  deleteDeal: (id: string) => void;
+  /** Change the pipeline status (regroups the pipeline). */
+  setDealStatus: (id: string, status: DealStatus) => void;
+  /**
+   * Save Objektdaten. Updating the Kaufpreis resets every scenario price to it
+   * (so calc / yield / score reflect the new master price); maklerPct feeds
+   * financing. Everything re-derives live.
+   */
+  updateObjektdaten: (id: string, patch: ObjektdatenInput) => void;
+
+  // --- Collaboration (store-backed, locally simulated) ---
+  /** Invite a collaborator (pending) by email + role; returns nothing. */
+  addCollaborator: (id: string, email: string, role: 'edit' | 'view') => void;
+  /** Remove a collaborator by id (owner can never be removed). */
+  removeCollaborator: (id: string, collabId: string | number) => void;
 
   // --- Risk lifecycle (all delegate to @dealpilot/core's state machine) ---
   /**
@@ -164,6 +211,31 @@ function seedChatsStates(seeds: SeedDeal[]): Record<string, ChatsState> {
 let chatSeq = 0;
 const nextChatId = (prefix: string) => `${prefix}-${(chatSeq += 1)}`;
 
+/** Monotonic counter for new deal ids (stable + collision-free in tests). */
+let dealSeq = 0;
+
+/**
+ * Independent, mutable copy of the seed list with a `createdSeq` guaranteed on
+ * every entry (array index when the literal omits it) so the "Datum" sort is
+ * well-defined and runtime-created deals can always out-rank the seeds.
+ */
+function initSeedList(seeds: SeedDeal[]): SeedDeal[] {
+  return seeds.map((s, i) => ({ ...s, createdSeq: s.createdSeq ?? i }));
+}
+
+/** A URL-safe slug from the street/city, used as the readable part of a new id. */
+function slugify(text: string): string {
+  const s = text
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return s || 'deal';
+}
+
 export function DealsProvider({
   children,
   seeds = SEED_DEALS,
@@ -172,6 +244,11 @@ export function DealsProvider({
   seeds?: SeedDeal[];
 }) {
   const [query, setQuery] = React.useState('');
+  const [sortMode, setSortMode] = React.useState<SortMode>('score');
+  // The ordered, mutable list of deals (add / remove / status live here).
+  const [seedList, setSeedList] = React.useState<SeedDeal[]>(() =>
+    initSeedList(seeds),
+  );
   const [states, setStates] = React.useState<Record<string, DealState>>(() =>
     seedStates(seeds),
   );
@@ -184,6 +261,7 @@ export function DealsProvider({
 
   // Re-seed if the seed set itself changes (mainly for tests passing `seeds`).
   React.useEffect(() => {
+    setSeedList(initSeedList(seeds));
     setStates(seedStates(seeds));
     setDocs(seedDocsStates(seeds));
     setChats(seedChatsStates(seeds));
@@ -226,12 +304,16 @@ export function DealsProvider({
   );
 
   // Rebuild SeedDeal-shaped entries with the *live* state so the pipeline
-  // reflects edits (score/yield), then derive rows + sections via core.
+  // reflects edits (score/yield), then derive + sort rows and build sections
+  // via core. Sorting happens before grouping so section order stays fixed.
   const liveSeeds = React.useMemo<SeedDeal[]>(
-    () => seeds.map((s) => ({ ...s, state: states[s.id] ?? s.state })),
-    [seeds, states],
+    () => seedList.map((s) => ({ ...s, state: states[s.id] ?? s.state })),
+    [seedList, states],
   );
-  const rows = React.useMemo(() => deriveRows(liveSeeds), [liveSeeds]);
+  const rows = React.useMemo(
+    () => sortRows(deriveRows(liveSeeds), sortMode),
+    [liveSeeds, sortMode],
+  );
   const sections = React.useMemo(
     () => buildSections(rows, query),
     [rows, query],
@@ -243,7 +325,9 @@ export function DealsProvider({
       query,
       setQuery,
       sections,
-      getSeed: (id) => seeds.find((s) => s.id === id),
+      sortMode,
+      setSortMode,
+      getSeed: (id) => seedList.find((s) => s.id === id),
       getRow: (id) => rows.find((r) => r.id === id),
       getState: (id) => states[id],
       getDocs: (id) => docs[id],
@@ -262,6 +346,90 @@ export function DealsProvider({
       patchAssumptions: (id, patch) => update(id, (s) => ({ ...s, ...patch })),
       addMeasure: (id, measure) =>
         update(id, (s) => ({ ...s, measures: [...s.measures, measure] })),
+
+      createDeal: (input) => {
+        const id = `${slugify(input.address || input.ort)}-${(dealSeq += 1)}`;
+        const createdSeq =
+          seedList.reduce((m, s) => Math.max(m, s.createdSeq ?? 0), 0) + 1;
+        const seed = createSeedDeal(id, input, createdSeq);
+        setSeedList((prev) => [...prev, seed]);
+        setStates((prev) => ({ ...prev, [id]: seed.state }));
+        // New deals start with no documents / chats (the Docs & Chat tabs show
+        // their empty-state stubs until the user uploads something).
+        return id;
+      },
+      deleteDeal: (id) => {
+        setSeedList((prev) => prev.filter((s) => s.id !== id));
+        setStates((prev) => {
+          if (!prev[id]) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setDocs((prev) => {
+          if (!prev[id]) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setChats((prev) => {
+          if (!prev[id]) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      },
+      setDealStatus: (id, status) =>
+        update(id, (s) => ({ ...s, deal: { ...s.deal, dealStatus: status } })),
+      updateObjektdaten: (id, patch) =>
+        update(id, (s) => ({
+          ...s,
+          deal: {
+            ...s.deal,
+            objektart: patch.objektart,
+            address: patch.address.trim() ? patch.address.trim() : undefined,
+            ort: patch.ort.trim(),
+            qm: patch.qm,
+            baujahr: patch.baujahr,
+            kaufpreis: patch.kaufpreis,
+            rent: patch.rent,
+          },
+          // Editing the master price resets every scenario price to it so calc,
+          // yield and score reflect the new number immediately.
+          priceByCase: {
+            base: patch.kaufpreis,
+            bull: patch.kaufpreis,
+            bear: patch.kaufpreis,
+          },
+          financing: { ...s.financing, maklerPct: patch.maklerPct },
+        })),
+
+      addCollaborator: (id, email, role) => {
+        const trimmed = email.trim();
+        if (!trimmed) return;
+        const name = trimmed
+          .split('@')[0]!
+          .replace(/[._]/g, ' ')
+          .replace(/\b\w/g, (m) => m.toUpperCase());
+        const collaborator: Collaborator = {
+          id: `c-${(dealSeq += 1)}`,
+          name,
+          email: trimmed,
+          role,
+          pending: true,
+        };
+        update(id, (s) => ({
+          ...s,
+          collaborators: [...s.collaborators, collaborator],
+        }));
+      },
+      removeCollaborator: (id, collabId) =>
+        update(id, (s) => ({
+          ...s,
+          collaborators: s.collaborators.filter(
+            (c) => c.role === 'owner' || c.id !== collabId,
+          ),
+        })),
 
       transitionRisk: (id, riskId, to) =>
         update(id, (s) => ({
@@ -343,7 +511,19 @@ export function DealsProvider({
         return newId;
       },
     }),
-    [rows, query, sections, seeds, states, docs, chats, update, updateDocs, updateChats],
+    [
+      rows,
+      query,
+      sections,
+      sortMode,
+      seedList,
+      states,
+      docs,
+      chats,
+      update,
+      updateDocs,
+      updateChats,
+    ],
   );
 
   return <DealsContext.Provider value={value}>{children}</DealsContext.Provider>;

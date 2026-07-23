@@ -95,6 +95,11 @@ export interface DealRowVM {
   priceStr: string;
   yieldStr: string;
 
+  /** Numeric purchase price (drives the "Kaufpreis" sort). */
+  kaufpreis: number;
+  /** Monotonic creation order (drives the "Datum" sort). */
+  createdSeq: number;
+
   /** Number of still-open risks (drives the "N Risiken" KPI). */
   openRiskCount: number;
   riskLabelStr: string;
@@ -120,6 +125,7 @@ export function deriveRow(seed: SeedDeal): DealRowVM {
   const { state } = seed;
   const { deal } = state;
   const discarded = deal.dealStatus === 'verworfen';
+  const createdSeq = seed.createdSeq ?? 0;
 
   const street = deal.address ?? deal.ort;
   const title = `${deal.objektart} · ${street}`;
@@ -156,6 +162,8 @@ export function deriveRow(seed: SeedDeal): DealRowVM {
       subtitle,
       priceStr,
       yieldStr,
+      kaufpreis: deal.kaufpreis,
+      createdSeq,
       openRiskCount,
       riskLabelStr: riskLabel(openRiskCount),
       hasRisk: openRiskCount > 0,
@@ -182,6 +190,8 @@ export function deriveRow(seed: SeedDeal): DealRowVM {
     subtitle,
     priceStr,
     yieldStr,
+    kaufpreis: deal.kaufpreis,
+    createdSeq,
     openRiskCount,
     riskLabelStr: riskLabel(openRiskCount),
     hasRisk: openRiskCount > 0,
@@ -197,6 +207,39 @@ export function deriveRow(seed: SeedDeal): DealRowVM {
 
 export function deriveRows(seeds: SeedDeal[]): DealRowVM[] {
   return seeds.map(deriveRow);
+}
+
+/** Pipeline sort modes offered by the ⋮ action menu. */
+export type SortMode = 'score' | 'kaufpreis' | 'datum';
+
+export const SORT_LABEL: Record<SortMode, string> = {
+  score: 'Score',
+  kaufpreis: 'Kaufpreis',
+  datum: 'Datum',
+};
+
+/**
+ * Sort rows for display. Sorting is applied across the whole list *before*
+ * grouping, so ordering is preserved inside each fixed status section:
+ *  - score:    highest score first (discarded rows, score null, sink to the end),
+ *  - kaufpreis: highest price first,
+ *  - datum:    newest (highest createdSeq) first.
+ * Ties break by createdSeq (newest first) for a stable, deterministic order.
+ */
+export function sortRows(rows: DealRowVM[], mode: SortMode): DealRowVM[] {
+  const out = [...rows];
+  out.sort((a, b) => {
+    if (mode === 'kaufpreis') {
+      return b.kaufpreis - a.kaufpreis || b.createdSeq - a.createdSeq;
+    }
+    if (mode === 'datum') {
+      return b.createdSeq - a.createdSeq;
+    }
+    const sa = a.score ?? -Infinity;
+    const sb = b.score ?? -Infinity;
+    return sb - sa || b.createdSeq - a.createdSeq;
+  });
+  return out;
 }
 
 /** Case-insensitive free-text filter over Ort / Straße / Typ (and subtitle). */

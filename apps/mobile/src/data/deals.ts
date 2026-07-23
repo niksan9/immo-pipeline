@@ -18,12 +18,15 @@
  * (4,2 % / 5,1 % / 3,1 % / 4,6 %).
  */
 
-import type {
-  Collaborator,
-  Contact,
-  Deal,
-  DealState,
-  Risk,
+import {
+  suggestedAfaSatz,
+  type Collaborator,
+  type Contact,
+  type Deal,
+  type DealState,
+  type Objektart,
+  type Risk,
+  type VermietetStatus,
 } from '@dealpilot/core';
 
 /**
@@ -65,6 +68,104 @@ export interface SeedDeal {
   verdict: string;
   /** Static analyst sub-scores feeding the Score-Zerlegung bars. */
   scoreBreakdown: ScoreBreakdown;
+  /**
+   * Monotonic creation order (for the "Datum" pipeline sort). Seeded deals get
+   * their array index; deals created at runtime get a higher value so they sort
+   * as the newest. Optional so the seed literals below stay terse (the store
+   * fills it in from the array index when absent).
+   */
+  createdSeq?: number;
+}
+
+/** Input collected by the "Deal anlegen" overlay (README 4). */
+export interface CreateDealInput {
+  objektart: Objektart;
+  /** Straße & Nr. — optional ("falls bekannt"). */
+  address?: string;
+  /** PLZ — optional. */
+  plz?: string;
+  ort: string;
+  vermietet: VermietetStatus;
+  kaufpreis: number;
+  /** Wohnfläche in m². */
+  qm: number;
+  /** Kaltmiete/Monat (EUR) — optional (0 if unknown). */
+  rent: number;
+}
+
+/**
+ * Default Baujahr for a manually-created deal. The create form (README 4)
+ * deliberately does NOT ask for the construction year, so we seed a neutral
+ * placeholder the user corrects later in the Objektdaten sheet. 1990 lands in
+ * the common "ab 1925" band → suggestedAfaSatz(1990) = 2,0 %.
+ */
+export const NEW_DEAL_BAUJAHR = 1990;
+
+/**
+ * Build a complete, valid `DealState` from the manual create form, filling
+ * every financing/cost/tax field with the prototype defaults so `calc()` and
+ * `computeScore()` run against realistic inputs from the first render:
+ *  - priceByCase seeded to the entered Kaufpreis for all three scenarios,
+ *  - financing/costs = the shared prototype defaults,
+ *  - gebaeudewert ≈ 70 % of the price (a plausible Kaufpreisaufteilung; only
+ *    the building is depreciable), afaSatz via `suggestedAfaSatz(baujahr)`,
+ *  - no risks (→ score 74 / green), no measures, just the owner as collaborator.
+ */
+export function createDealState(input: CreateDealInput): DealState {
+  const baujahr = NEW_DEAL_BAUJAHR;
+  const price = input.kaufpreis;
+  const address = input.address?.trim();
+  const plz = input.plz?.trim();
+  const deal: Deal = {
+    objektart: input.objektart,
+    address: address ? address : undefined,
+    plz: plz ? plz : undefined,
+    ort: input.ort.trim(),
+    qm: input.qm,
+    baujahr,
+    kaufpreis: price,
+    rent: input.rent,
+    vermietet: input.vermietet,
+    dealStatus: 'neu',
+  };
+  return {
+    deal,
+    priceByCase: { base: price, bull: price, bear: price },
+    scenario: 'base',
+    financing: { zins: 3.8, tilg: 2.0, ek: 90000, maklerPct: 0.0357 },
+    costs: { hausgeld: 115, ruecklage: 60, verwaltung: 30 },
+    costGrowth: 2.0,
+    wertZuwachs: 2.0,
+    steig: 2.3,
+    gebaeudewert: Math.round(price * 0.7),
+    afaSatz: suggestedAfaSatz(baujahr),
+    steuersatz: 42,
+    measures: [],
+    risks: [],
+    collaborators: [{ ...OWNER }],
+    contact: {
+      name: 'Ansprechpartner',
+      role: 'Noch nicht hinterlegt',
+      hasPhoto: false,
+    },
+  };
+}
+
+/** Wrap a fresh `DealState` in a SeedDeal with placeholder verdict / sub-scores. */
+export function createSeedDeal(
+  id: string,
+  input: CreateDealInput,
+  createdSeq: number,
+): SeedDeal {
+  return {
+    id,
+    state: createDealState(input),
+    verdict:
+      'Neu angelegter Deal. Lade Unterlagen hoch oder ergänze die Objektdaten, ' +
+      'damit die KI Kennzahlen prüfen und Risiken finden kann.',
+    scoreBreakdown: { rendite: 60, lage: 60, objekt: 55 },
+    createdSeq,
+  };
 }
 
 // --- Shared defaults (from the prototype's default `state`) -----------------

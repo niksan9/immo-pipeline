@@ -6,13 +6,7 @@
  */
 
 import * as React from 'react';
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { calc, formatPercent } from '@dealpilot/core';
@@ -52,32 +46,41 @@ describe('Sheet — open/close', () => {
     expect(screen.getByText('Inhalt')).toBeTruthy();
   });
 
-  it('calls onClose when the backdrop is pressed and unmounts on close', async () => {
-    const onClose = jest.fn();
-    const { rerender } = render(
-      wrap(
-        <Sheet visible onClose={onClose} testID="sheet">
-          <Text>Inhalt</Text>
-        </Sheet>,
-      ),
-    );
-    fireEvent.press(screen.getByTestId('sheet-backdrop'));
-    expect(onClose).toHaveBeenCalledTimes(1);
-
-    // Parent reacts by flipping visible → false; the sheet animates out and
-    // unmounts.
-    await act(async () => {
-      rerender(
+  it('calls onClose when the backdrop is pressed and unmounts on close', () => {
+    // Fake timers make the close-out animation deterministic: we drive it to
+    // completion with runOnlyPendingTimers instead of polling the ~200 ms
+    // Animated callback with waitFor (which flickered under full-suite load).
+    jest.useFakeTimers();
+    try {
+      const onClose = jest.fn();
+      const { rerender } = render(
         wrap(
-          <Sheet visible={false} onClose={onClose} testID="sheet">
+          <Sheet visible onClose={onClose} testID="sheet">
             <Text>Inhalt</Text>
           </Sheet>,
         ),
       );
-    });
-    await waitFor(() => expect(screen.queryByTestId('sheet')).toBeNull(), {
-      timeout: 3000,
-    });
+      fireEvent.press(screen.getByTestId('sheet-backdrop'));
+      expect(onClose).toHaveBeenCalledTimes(1);
+
+      // Parent flips visible → false; the sheet animates out and unmounts.
+      act(() => {
+        rerender(
+          wrap(
+            <Sheet visible={false} onClose={onClose} testID="sheet">
+              <Text>Inhalt</Text>
+            </Sheet>,
+          ),
+        );
+      });
+      // Flush the exit animation + its completion callback (setRendered(false)).
+      act(() => {
+        jest.runOnlyPendingTimers();
+      });
+      expect(screen.queryByTestId('sheet')).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

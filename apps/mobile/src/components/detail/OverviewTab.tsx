@@ -28,6 +28,10 @@ export interface OverviewTabProps {
   onToast: (msg: string) => void;
   /** Open the Risiko-Detail screen for a risk id. */
   onRiskPress: (riskId: string) => void;
+  /** Open the Ansprechpartner sheet (contact card tap). */
+  onOpenContact: () => void;
+  /** Open the Zusammenarbeiten sheet (collaboration bar "Verwalten"). */
+  onManageCollab: () => void;
 }
 
 interface Step {
@@ -50,6 +54,8 @@ export function OverviewTab({
   color,
   onToast,
   onRiskPress,
+  onOpenContact,
+  onManageCollab,
 }: OverviewTabProps) {
   const { maxPreis } = computeScore(state.risks);
   const bars = scoreBars(state.risks, breakdown);
@@ -86,8 +92,9 @@ export function OverviewTab({
       {shared.length > 0 && (
         <Pressable
           style={styles.collab}
-          onPress={() => onToast('Zusammenarbeiten – bald verfügbar')}
+          onPress={onManageCollab}
           accessibilityRole="button"
+          testID="collab-bar"
         >
           <View style={styles.avatarRow}>
             {[state.collaborators[0], ...shared].slice(0, 3).map((c, i) => (
@@ -124,8 +131,9 @@ export function OverviewTab({
       <Text style={[type.monoLabel, styles.sectionLabel]}>ANSPRECHPARTNER</Text>
       <Pressable
         style={styles.contactCard}
-        onPress={() => onToast('Ansprechpartner – bald verfügbar')}
+        onPress={onOpenContact}
         accessibilityRole="button"
+        testID="contact-card"
       >
         <View style={styles.contactAvatar}>
           <Text style={styles.contactInitials}>{initials(contact.name)}</Text>

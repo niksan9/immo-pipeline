@@ -21,6 +21,7 @@ import {
 } from '@dealpilot/core';
 
 import { useDeals } from '../../../src/data/store';
+import { SECTION_LABEL } from '../../../src/lib/pipeline';
 import { colors } from '../../../src/theme/tokens';
 import { type } from '../../../src/theme/typography';
 import { Toast, useToast } from '../../../src/components/Toast';
@@ -33,6 +34,12 @@ import { CalcTab, type CalcActions } from '../../../src/components/detail/CalcTa
 import { DocsTab } from '../../../src/components/detail/DocsTab';
 import { ChatTab, type ChatActions } from '../../../src/components/detail/ChatTab';
 import { StubTab } from '../../../src/components/detail/StubTab';
+import { DealMenuSheet } from '../../../src/components/detail/DealMenuSheet';
+import { StatusSheet } from '../../../src/components/detail/StatusSheet';
+import { ObjektdatenSheet } from '../../../src/components/detail/ObjektdatenSheet';
+import { CollaborateSheet } from '../../../src/components/detail/CollaborateSheet';
+import { ContactSheet } from '../../../src/components/detail/ContactSheet';
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog';
 
 export default function DealDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -47,6 +54,14 @@ export default function DealDetailScreen() {
   const toast = useToast();
 
   const [tab, setTab] = React.useState<DetailTab>('overview');
+
+  // Which overlay / sheet is open (UI-only state — not stored).
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [statusOpen, setStatusOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [collabOpen, setCollabOpen] = React.useState(false);
+  const [contactOpen, setContactOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   const actions = React.useMemo<CalcActions>(
     () => ({
@@ -116,7 +131,7 @@ export default function DealDetailScreen() {
         tab={tab}
         onTab={setTab}
         onBack={() => router.back()}
-        onKebab={() => toast.show('Aktionsmenü – bald verfügbar')}
+        onKebab={() => setMenuOpen(true)}
         topInset={insets.top}
       />
 
@@ -130,6 +145,8 @@ export default function DealDetailScreen() {
             color={color}
             onToast={toast.show}
             onRiskPress={openRisk}
+            onOpenContact={() => setContactOpen(true)}
+            onManageCollab={() => setCollabOpen(true)}
           />
         )}
         {tab === 'calc' && (
@@ -171,6 +188,89 @@ export default function DealDetailScreen() {
             />
           ))}
       </View>
+
+      <DealMenuSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        title={headerTitle}
+        status={deal.dealStatus}
+        onStatus={() => {
+          setMenuOpen(false);
+          setStatusOpen(true);
+        }}
+        onEdit={() => {
+          setMenuOpen(false);
+          setEditOpen(true);
+        }}
+        onCollab={() => {
+          setMenuOpen(false);
+          setCollabOpen(true);
+        }}
+        onShare={() => {
+          setMenuOpen(false);
+          toast.show('Deal teilen · digitales Exposé – Demo');
+        }}
+        onDelete={() => {
+          setMenuOpen(false);
+          setDeleteOpen(true);
+        }}
+      />
+
+      <StatusSheet
+        visible={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        status={deal.dealStatus}
+        onPick={(status) => {
+          store.setDealStatus(dealId, status);
+          setStatusOpen(false);
+          toast.show(`Status: ${SECTION_LABEL[status]}`);
+        }}
+      />
+
+      <ObjektdatenSheet
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        state={state}
+        onSave={(patch) => {
+          store.updateObjektdaten(dealId, patch);
+          setEditOpen(false);
+          toast.show('Objektdaten gespeichert');
+        }}
+      />
+
+      <CollaborateSheet
+        visible={collabOpen}
+        onClose={() => setCollabOpen(false)}
+        dealTitle={headerTitle}
+        collaborators={state.collaborators}
+        onInvite={(email, role) => store.addCollaborator(dealId, email, role)}
+        onCopyLink={() => toast.show('Einladungslink kopiert')}
+        onRemove={(collabId) => store.removeCollaborator(dealId, collabId)}
+        onToast={toast.show}
+      />
+
+      <ContactSheet
+        visible={contactOpen}
+        onClose={() => setContactOpen(false)}
+        contact={state.contact}
+        onToast={toast.show}
+      />
+
+      <ConfirmDialog
+        visible={deleteOpen}
+        title="Deal löschen?"
+        message={`„${headerTitle}" wird dauerhaft aus deiner Pipeline entfernt.`}
+        confirmLabel="Löschen"
+        destructive
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          setDeleteOpen(false);
+          store.deleteDeal(dealId);
+          toast.show('Deal gelöscht');
+          router.back();
+        }}
+        testID="delete-confirm"
+      />
 
       <Toast controller={toast} bottom={insets.bottom + 24} />
     </View>

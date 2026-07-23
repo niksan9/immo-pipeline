@@ -21,6 +21,7 @@ import {
   filterRows,
   initials,
   riskLabel,
+  sortRows,
   SECTION_ORDER,
 } from '../src/lib/pipeline';
 import { colors } from '../src/theme/tokens';
@@ -226,6 +227,41 @@ describe('buildSections — grouping, counters, fixed order', () => {
     const gartenweg = buildSections(rows, 'gartenweg');
     expect(gartenweg.map((s) => s.key)).toEqual(['pruefung']);
     expect(gartenweg[0]!.count).toBe(1);
+  });
+});
+
+describe('sortRows — Score / Kaufpreis / Datum', () => {
+  // Two In-Prüfung deals (78 vs 61) are the clearest same-section comparison.
+  const inPruefung = rows.filter((r) => r.dealStatus === 'pruefung');
+
+  it('score: highest score first', () => {
+    const sorted = sortRows(rows, 'score');
+    const ids = sorted.filter((r) => r.dealStatus === 'pruefung').map((r) => r.id);
+    // lindenstrasse (78) before gartenweg (61).
+    expect(ids).toEqual(['lindenstrasse-14', 'gartenweg-3']);
+  });
+
+  it('kaufpreis: highest price first', () => {
+    const sorted = sortRows(rows, 'kaufpreis');
+    const ids = sorted.filter((r) => r.dealStatus === 'pruefung').map((r) => r.id);
+    // gartenweg (420.000) before lindenstrasse (189.000).
+    expect(ids).toEqual(['gartenweg-3', 'lindenstrasse-14']);
+    // Global: gartenweg is the most expensive deal overall.
+    expect(sorted[0]!.id).toBe('gartenweg-3');
+  });
+
+  it('datum: newest createdSeq first', () => {
+    const withSeq = [
+      { ...inPruefung[0]!, id: 'old', createdSeq: 1 },
+      { ...inPruefung[1]!, id: 'new', createdSeq: 9 },
+    ];
+    expect(sortRows(withSeq, 'datum').map((r) => r.id)).toEqual(['new', 'old']);
+  });
+
+  it('is pure (does not mutate the input)', () => {
+    const before = rows.map((r) => r.id);
+    sortRows(rows, 'kaufpreis');
+    expect(rows.map((r) => r.id)).toEqual(before);
   });
 });
 
