@@ -1,0 +1,42 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# Do not install any package version published within the last 3 days (4320 min).
+# Blunts fast-moving supply-chain attacks (malicious releases usually get yanked
+# within hours/days). Exceptions are listed exactly in minimumReleaseAgeExclude.
+minimumReleaseAge: 4320
+# Transitive-only security pins (packages we don't declare directly).
+overrides:
+  lodash: '>=4.17.24'
+  uuid: '>=11.1.1'
+  # drizzle-kit pulls the deprecated @esbuild-kit/* wrappers which pin a
+  # vulnerable esbuild 0.18 (GHSA-67mh-4wv8-2f99, dev-server CORS). Force the
+  # patched line; the wrapper only does one-shot config transpile at generate
+  # time, never `esbuild serve`, so the API surface it uses is unaffected.
+  '@esbuild-kit/core-utils>esbuild': '>=0.25.3'
+allowBuilds:
+  '@prisma/client': false
+  better-sqlite3: false
+  esbuild: true
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.10'
+  - '@expo/config-plugins@57.0.6'
+  - '@expo/config@57.0.6'
+  - '@expo/fingerprint@0.20.6'
+  - '@expo/image-utils@0.11.4'
+  - '@expo/metro-config@57.0.7'
+  - '@expo/prebuild-config@57.0.9'
+  - '@expo/require-utils@57.0.4'
+  - '@expo/router-server@57.0.4'
+  - babel-preset-expo@57.0.4
+  - expo-asset@57.0.7
+  - expo-constants@57.0.7
+  - expo-modules-autolinking@57.0.9
+  - expo-modules-core@57.0.7
+  - expo-modules-jsi@57.0.4
+  - expo@57.0.8
+  - '@expo/metro-runtime@57.0.7'
+  - expo-linking@57.0.4
+  - expo-router@57.0.8
+  - expo-splash-screen@57.0.5

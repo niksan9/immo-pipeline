@@ -1,0 +1,336 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DealRow matches snapshot 1`] = `
+<View
+  accessibilityLabel="MFH · Gartenweg 3, Score 61"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    {
+      "alignItems": "stretch",
+      "backgroundColor": "#ffffff",
+      "borderBottomColor": "#ece9e4",
+      "borderBottomWidth": 1,
+      "flexDirection": "row",
+    }
+  }
+  testID="deal-row-gartenweg-3"
+>
+  <View
+    style={
+      [
+        {
+          "width": 4,
+        },
+        {
+          "backgroundColor": "#c2882a",
+        },
+      ]
+    }
+  />
+  <View
+    style={
+      [
+        {
+          "alignItems": "center",
+          "justifyContent": "center",
+          "paddingVertical": 14,
+          "width": 54,
+        },
+        {
+          "backgroundColor": "#f6efdf",
+        },
+      ]
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "IBMPlexMono_600SemiBold",
+            "fontSize": 21,
+            "lineHeight": 21,
+          },
+          {
+            "color": "#c2882a",
+          },
+        ]
+      }
+    >
+      61
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "IBMPlexMono_500Medium",
+            "fontSize": 7.5,
+            "letterSpacing": 0.9,
+          },
+          {
+            "marginTop": 3,
+          },
+          {
+            "color": "#c2882a",
+          },
+        ]
+      }
+    >
+      SCORE
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "flex": 1,
+        "minWidth": 0,
+        "paddingHorizontal": 14,
+        "paddingVertical": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "gap": 8,
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          {
+            "color": "#23211d",
+            "flexShrink": 1,
+            "fontFamily": "HankenGrotesk_600SemiBold",
+            "fontSize": 14,
+          }
+        }
+      >
+        MFH · Gartenweg 3
+      </Text>
+    </View>
+    <Text
+      style={
+        {
+          "color": "#6b6862",
+          "fontFamily": "IBMPlexMono_400Regular",
+          "fontSize": 11.5,
+          "marginTop": 3,
+        }
+      }
+    >
+      Halle · 240 m² · 1965 · teilverm.
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "columnGap": 6,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "marginTop": 7,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3a3833",
+            "fontFamily": "IBMPlexMono_500Medium",
+            "fontSize": 11.5,
+          }
+        }
+      >
+        420.000 €
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#3a3833",
+            "fontFamily": "IBMPlexMono_500Medium",
+            "fontSize": 11.5,
+          }
+        }
+      >
+        · 
+        5,1 %
+      </Text>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+          }
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "color": "#3a3833",
+                "fontFamily": "IBMPlexMono_500Medium",
+                "fontSize": 11.5,
+              },
+              {
+                "marginRight": 0,
+              },
+            ]
+          }
+        >
+          · 
+        </Text>
+        <RNSVGSvgView
+          align="xMidYMid"
+          bbHeight={12}
+          bbWidth={12}
+          fill="none"
+          focusable={false}
+          height={12}
+          meetOrSlice={0}
+          minX={0}
+          minY={0}
+          style={
+            [
+              {
+                "backgroundColor": "transparent",
+                "borderWidth": 0,
+              },
+              {
+                "flex": 0,
+                "height": 12,
+                "width": 12,
+              },
+            ]
+          }
+          vbHeight={14}
+          vbWidth={14}
+          width={12}
+        >
+          <RNSVGGroup
+            fill={null}
+            propList={
+              [
+                "fill",
+              ]
+            }
+          >
+            <RNSVGPath
+              d="M7 1.6l5.4 9.4a.8.8 0 0 1-.7 1.2H2.3a.8.8 0 0 1-.7-1.2L7 1.6z"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              propList={
+                [
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinejoin",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4290938922,
+                  "type": 0,
+                }
+              }
+              strokeLinejoin={1}
+              strokeWidth={1.6}
+            />
+            <RNSVGPath
+              d="M7 5.4v3"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              propList={
+                [
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinecap",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4290938922,
+                  "type": 0,
+                }
+              }
+              strokeLinecap={1}
+              strokeWidth={1.6}
+            />
+            <RNSVGCircle
+              cx={7}
+              cy={10.2}
+              fill={
+                {
+                  "payload": 4290938922,
+                  "type": 0,
+                }
+              }
+              propList={
+                [
+                  "fill",
+                ]
+              }
+              r={0.85}
+            />
+          </RNSVGGroup>
+        </RNSVGSvgView>
+        <Text
+          style={
+            [
+              {
+                "color": "#3a3833",
+                "fontFamily": "IBMPlexMono_500Medium",
+                "fontSize": 11.5,
+              },
+              {
+                "color": "#c2882a",
+                "marginLeft": 3,
+              },
+            ]
+          }
+        >
+          3 Risiken
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;

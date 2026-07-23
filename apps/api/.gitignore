@@ -1,0 +1,5 @@
+# Root .gitignore ignores .env and .env.* — but .env.example must be committed.
+!.env.example
+
+# Drizzle scratch
+drizzle/meta/_journal.tmp

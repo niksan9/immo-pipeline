@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Bricolage+Grotesque:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#d9d5cf;font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:#2e6f52;text-decoration:none}a:hover{color:#22563f}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px}
+.ph{width:392px;background:#0b0b0a;border-radius:54px;padding:11px;box-shadow:0 40px 80px -28px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.25)}
+.scr{border-radius:43px;overflow:hidden;height:840px;position:relative;display:flex;flex-direction:column;background:#f7f5f2}
+.island{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:116px;height:33px;background:#0b0b0a;border-radius:20px;z-index:40}
+.sb{height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px;flex:none;color:#23211d}
+.sb .t{font:600 15px 'Hanken Grotesk'}
+.scrl{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.scrl::-webkit-scrollbar{display:none}
+.hint{font:600 10.5px 'IBM Plex Mono';letter-spacing:.1em;color:#8a867f}
+input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;width:100%;margin:12px 0 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #23211d;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #23211d;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
+.tinp{font:600 15px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:9px;padding:9px 11px;width:100%;background:#fff;outline:none}
+.tinp:focus{border-color:#23211d}
+@keyframes tin{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes sheetin{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1)}}
+</style>
+</helmet>
+
+<div class="wrap"><div class="ph"><div class="scr">
+<div class="island"></div>
+<div class="sb"><span class="t">9:41</span><span style="font:600 12px 'IBM Plex Mono'">•••  ⌁  100</span></div>
+
+<!-- ========================= PIPELINE ========================= -->
+<sc-if value="{{ isPipeline }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+<div style="padding:6px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex:none;background:#fff">
+  <div style="font:700 21px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Pipeline</div>
+  <div onClick="{{ openPipeMenu }}" style="cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" fill="#23211d"><circle cx="10" cy="4" r="1.7"></circle><circle cx="10" cy="10" r="1.7"></circle><circle cx="10" cy="16" r="1.7"></circle></svg></div>
+</div>
+<div style="flex:none;background:#fff;border-bottom:1px solid #e7e4df;padding:0 16px 12px">
+  <div style="display:flex;align-items:center;gap:9px;background:#f0eee9;border-radius:11px;padding:10px 13px">
+    <svg width="15" height="15" fill="none" stroke="#9a968f" stroke-width="1.9"><circle cx="6.5" cy="6.5" r="4.5"></circle><path d="M10 10l4 4"></path></svg>
+    <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Deals durchsuchen – Ort, Straße, Typ …" style="flex:1;background:none;border:none;outline:none;font:400 13.5px 'Hanken Grotesk';color:#23211d">
+  </div>
+</div>
+<div class="scrl">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px" class="hint"><span>IN PRÜFUNG</span><span>{{ nPruef }}</span></div>
+  <sc-for list="{{ pruefung }}" as="d" hint-placeholder-count="2">
+  <div onClick="{{ open }}" style="display:flex;align-items:stretch;border-bottom:1px solid #ece9e4;background:#fff;cursor:pointer">
+    <div style="width:4px;background:{{ d.color }}"></div>
+    <div style="flex:none;width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:{{ d.softBg }};padding:14px 0"><span style="font:600 21px 'IBM Plex Mono';color:{{ d.color }};line-height:1">{{ d.score }}</span><span style="font:500 7.5px 'IBM Plex Mono';color:{{ d.color }};letter-spacing:.12em;margin-top:3px">SCORE</span></div>
+    <div style="flex:1;min-width:0;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font:600 14px 'Hanken Grotesk';color:#23211d;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.type }} · {{ d.street }}</div><sc-if value="{{ d.shared }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex:none;padding-left:6px"><sc-for list="{{ d.shared }}" as="a" hint-placeholder-count="1"><div style="width:22px;height:22px;border-radius:50%;background:#dfe6e8;border:1.5px solid #fff;margin-left:-6px;display:flex;align-items:center;justify-content:center;font:600 8.5px 'Hanken Grotesk';color:#4a7a86">{{ a }}</div></sc-for></div></sc-if></div>
+      <div style="font:400 11.5px 'IBM Plex Mono';color:#6b6862;margin-top:3px">{{ d.sub }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:7px;font:500 11.5px 'IBM Plex Mono'"><span style="color:#3a3833">{{ d.price }}</span><span style="color:#3a3833">· {{ d.yield }}</span><sc-if value="{{ d.hasRisk }}" hint-placeholder-val="{{ true }}"><span style="color:{{ d.color }}">· {{ d.riskLabel }}</span></sc-if></div>
+    </div>
+  </div>
+  </sc-for>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px" class="hint"><span>NEU</span><span>{{ nNeu }}</span></div>
+  <sc-for list="{{ neu }}" as="d" hint-placeholder-count="1">
+  <div onClick="{{ open }}" style="display:flex;align-items:stretch;border-top:1px solid #ece9e4;border-bottom:1px solid #ece9e4;background:#fff;cursor:pointer">
+    <div style="width:4px;background:{{ d.color }}"></div>
+    <div style="flex:none;width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:{{ d.softBg }};padding:14px 0"><span style="font:600 21px 'IBM Plex Mono';color:{{ d.color }};line-height:1">{{ d.score }}</span><span style="font:500 7.5px 'IBM Plex Mono';color:{{ d.color }};letter-spacing:.12em;margin-top:3px">SCORE</span></div>
+    <div style="flex:1;min-width:0;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font:600 14px 'Hanken Grotesk';color:#23211d;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.type }} · {{ d.street }}</div><sc-if value="{{ d.shared }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex:none;padding-left:6px"><sc-for list="{{ d.shared }}" as="a" hint-placeholder-count="1"><div style="width:22px;height:22px;border-radius:50%;background:#dfe6e8;border:1.5px solid #fff;margin-left:-6px;display:flex;align-items:center;justify-content:center;font:600 8.5px 'Hanken Grotesk';color:#4a7a86">{{ a }}</div></sc-for></div></sc-if></div>
+      <div style="font:400 11.5px 'IBM Plex Mono';color:#6b6862;margin-top:3px">{{ d.sub }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:7px;font:500 11.5px 'IBM Plex Mono'"><span style="color:#3a3833">{{ d.price }}</span><span style="color:#3a3833">· {{ d.yield }}</span><sc-if value="{{ d.hasRisk }}" hint-placeholder-val="{{ true }}"><span style="color:{{ d.color }}">· {{ d.riskLabel }}</span></sc-if></div>
+    </div>
+  </div>
+  </sc-for>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px" class="hint"><span>VERHANDLUNG</span><span>{{ nVerh }}</span></div>
+  <sc-for list="{{ verhandlung }}" as="d" hint-placeholder-count="1">
+  <div onClick="{{ open }}" style="display:flex;align-items:stretch;border-top:1px solid #ece9e4;border-bottom:1px solid #ece9e4;background:#fff;cursor:pointer">
+    <div style="width:4px;background:{{ d.color }}"></div>
+    <div style="flex:none;width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:{{ d.softBg }};padding:14px 0"><span style="font:600 21px 'IBM Plex Mono';color:{{ d.color }};line-height:1">{{ d.score }}</span><span style="font:500 7.5px 'IBM Plex Mono';color:{{ d.color }};letter-spacing:.12em;margin-top:3px">SCORE</span></div>
+    <div style="flex:1;min-width:0;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font:600 14px 'Hanken Grotesk';color:#23211d;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.type }} · {{ d.street }}</div><sc-if value="{{ d.shared }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex:none;padding-left:6px"><sc-for list="{{ d.shared }}" as="a" hint-placeholder-count="1"><div style="width:22px;height:22px;border-radius:50%;background:#dfe6e8;border:1.5px solid #fff;margin-left:-6px;display:flex;align-items:center;justify-content:center;font:600 8.5px 'Hanken Grotesk';color:#4a7a86">{{ a }}</div></sc-for></div></sc-if></div>
+      <div style="font:400 11.5px 'IBM Plex Mono';color:#6b6862;margin-top:3px">{{ d.sub }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:7px;font:500 11.5px 'IBM Plex Mono'"><span style="color:#3a3833">{{ d.price }}</span><span style="color:#3a3833">· {{ d.yield }}</span></div>
+    </div>
+  </div>
+  </sc-for>
+
+  <sc-if value="{{ notSearching }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px;font:600 10.5px 'IBM Plex Mono';letter-spacing:.1em;color:#b6b2ab"><span>VERWORFEN</span><span>1</span></div>
+  <div style="opacity:.62;display:flex;align-items:stretch;border-top:1px solid #ece9e4">
+    <div style="width:4px;background:#d4d0c9"></div>
+    <div style="flex:none;width:54px;display:flex;align-items:center;justify-content:center;font:600 18px 'IBM Plex Mono';color:#b6b2ab">—</div>
+    <div style="flex:1;padding:11px 14px"><div style="font:600 13px 'Hanken Grotesk';color:#3a3833">ETW · Ringstraße 40</div><div style="font:400 11px 'IBM Plex Mono';color:#8a867f;margin-top:1px">Erbpacht + Sonderumlage</div></div>
+  </div>
+  </sc-if>
+  <div style="height:14px"></div>
+</div>
+<nav style="display:flex;align-items:center;justify-content:space-around;padding:11px 10px 28px;background:#fff;border-top:1px solid #e7e4df;flex:none">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#23211d"><svg width="21" height="21" fill="#23211d"><circle cx="4" cy="5" r="1.5"></circle><rect x="8" y="4" width="10" height="2" rx="1"></rect><circle cx="4" cy="10.5" r="1.5"></circle><rect x="8" y="9.5" width="10" height="2" rx="1"></rect><circle cx="4" cy="16" r="1.5"></circle><rect x="8" y="15" width="10" height="2" rx="1"></rect></svg><span style="font:600 9.5px 'Hanken Grotesk'">Pipeline</span></div>
+  <div onClick="{{ toastSoon }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b6b2ab;cursor:pointer"><svg width="21" height="21" fill="#b6b2ab"><rect x="3" y="11" width="4" height="7" rx="1"></rect><rect x="8.5" y="6" width="4" height="12" rx="1"></rect><rect x="14" y="9" width="4" height="9" rx="1"></rect></svg><span style="font:500 9.5px 'Hanken Grotesk'">Markt</span></div>
+  <div onClick="{{ toastPlus }}" style="width:48px;height:48px;border-radius:14px;background:#23211d;display:flex;align-items:center;justify-content:center;margin-top:-12px;cursor:pointer"><svg width="20" height="20" fill="#fff"><rect x="9" y="3.5" width="2.2" height="13" rx="1.1"></rect><rect x="3.4" y="9" width="13" height="2.2" rx="1.1"></rect></svg></div>
+  <div onClick="{{ toastSoon }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b6b2ab;cursor:pointer"><svg width="21" height="21" viewBox="0 0 21 21"><circle cx="10.5" cy="7.5" r="3.8" fill="#b6b2ab"></circle><path d="M4 19c0-3.8 3-6 6.5-6s6.5 2.2 6.5 6" fill="#b6b2ab"></path></svg><span style="font:500 9.5px 'Hanken Grotesk'">Profil</span></div>
+</nav>
+</div>
+</sc-if>
+
+<!-- ========================= DEAL-DETAIL ========================= -->
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+<div style="background:#fff;flex:none;border-bottom:1px solid #e7e4df">
+  <div style="padding:4px 14px 12px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div onClick="{{ goBack }}" style="cursor:pointer;flex:none"><svg width="20" height="20" fill="none" stroke="#23211d" stroke-width="2"><path d="M13 4l-7 6 7 6"></path></svg></div>
+      <div style="flex:1"></div>
+      <div onClick="{{ openMenu }}" style="cursor:pointer;flex:none;width:32px;height:32px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" fill="#3a3833"><circle cx="10" cy="4" r="1.7"></circle><circle cx="10" cy="10" r="1.7"></circle><circle cx="10" cy="16" r="1.7"></circle></svg></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:13px;margin-top:2px">
+      <div style="width:54px;height:54px;border-radius:14px;background:{{ scoreBg }};display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none"><span style="font:700 22px 'Bricolage Grotesque',sans-serif;color:{{ scoreCol }};line-height:1">{{ scoreVal }}</span><span style="font:600 7px 'IBM Plex Mono';letter-spacing:.1em;color:{{ scoreCol }};margin-top:2px">SCORE</span></div>
+      <div style="flex:1;min-width:0">
+        <div style="font:700 18px/1.15 'Bricolage Grotesque',sans-serif;color:#23211d">{{ deal.street }}</div>
+        <div style="font:400 11.5px 'IBM Plex Mono';color:#6b6862;margin-top:3px">{{ dealMetaShort }}</div>
+        <div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#3a3833;margin-top:3px">{{ dealPriceStr }}</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;padding:0 6px">
+    <div onClick="{{ openOverview }}" style="{{ tabOv }}">Übersicht</div>
+    <div onClick="{{ openCalc }}" style="{{ tabCa }}">Kalkulation</div>
+    <div onClick="{{ openDocs }}" style="{{ tabDo }}">Dokumente</div>
+    <div onClick="{{ openChat }}" style="{{ tabCh }}">Chat</div>
+  </div>
+</div>
+
+<!-- TAB: Übersicht -->
+<sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+<div class="scrl" style="padding:16px">
+  <sc-if value="{{ isShared }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ openCollab }}" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:10px 13px;margin-bottom:12px;cursor:pointer">
+    <div style="display:flex;flex:none"><sc-for list="{{ shareAvatars }}" as="a" hint-placeholder-count="2"><div style="width:26px;height:26px;border-radius:50%;background:#dfe6e8;border:1.5px solid #fff;margin-left:{{ a.ml }};display:flex;align-items:center;justify-content:center;font:600 9.5px 'Hanken Grotesk';color:#4a7a86">{{ a.initials }}</div></sc-for></div>
+    <span style="flex:1;font:500 12px 'Hanken Grotesk';color:#3a3833">{{ shareLabel }}</span>
+    <span style="font:600 11px 'Hanken Grotesk';color:#2f5760;flex:none">Verwalten</span>
+  </div>
+  </sc-if>
+  <div style="background:#1c1b19;border-radius:16px;padding:16px 16px 15px">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px"><span style="width:6px;height:6px;border-radius:50%;background:#2e9e5b"></span><span style="font:600 10.5px 'IBM Plex Mono';letter-spacing:.14em;color:#8f8b83">KI-URTEIL</span></div>
+    <div style="font:500 15px/1.55 'Hanken Grotesk';color:#f4f2ef">Solide Cashflow-Wohnung in gefragter Leipziger Lage. Die Rendite trägt sich, aber ein vertagter Dachbeschluss drückt den Score — vor Kauf klären. Der Preis wirkt verhandelbar.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;padding-top:14px;border-top:1px solid #33322e"><span style="font:600 10.5px 'IBM Plex Mono';color:#8f8b83;letter-spacing:.08em">EMPF. MAX-PREIS</span><span style="font:600 15px 'IBM Plex Mono';color:#fff;background:#2e9e5b;border-radius:9px;padding:6px 12px">{{ maxPreisStr }}</span></div>
+  </div>
+  <div class="hint" style="margin:18px 2px 8px">ANSPRECHPARTNER</div>
+  <div onClick="{{ openContact }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:12px 14px;cursor:pointer">
+    <div style="width:46px;height:46px;border-radius:50%;background:#dfe6e8;display:flex;align-items:center;justify-content:center;flex:none;font:600 15px 'Hanken Grotesk';color:#4a7a86">{{ contactInitials }}</div>
+    <div style="flex:1;min-width:0"><div style="font:600 14px 'Hanken Grotesk';color:#23211d">{{ contactName }}</div><div style="font:400 11px 'IBM Plex Mono';color:#6b6862;margin-top:2px">{{ contactRole }}</div></div>
+    <div style="display:flex;gap:8px;flex:none">
+      <div onClick="{{ contactCall }}" style="width:34px;height:34px;border-radius:10px;background:#e6f1ea;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="1.7"><path d="M3 3.5c0 6 3.5 9.5 9.5 9.5l0-2.5-2.5-1-1.5 1.2C6.8 9.6 6 8.2 5.3 6.5L6.5 5 5.5 2.5z"></path></svg></div>
+      <div onClick="{{ contactMail }}" style="width:34px;height:34px;border-radius:10px;background:#e6eef0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" fill="none" stroke="#2f5760" stroke-width="1.7"><rect x="2" y="4" width="12" height="9" rx="1.5"></rect><path d="M2.5 5l5.5 4 5.5-4"></path></svg></div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:15px 16px;margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between"><span class="hint">SCORE-ZERLEGUNG</span><span style="font:600 13px 'IBM Plex Mono';color:{{ scoreCol }}">Ø {{ scoreVal }}</span></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:13px"><span style="width:96px;font:500 12.5px 'Hanken Grotesk';color:#3a3833">Rendite</span><div style="flex:1;height:6px;border-radius:3px;background:#efece7;overflow:hidden"><div style="width:82%;height:100%;background:#2e9e5b"></div></div><span style="width:26px;text-align:right;font:600 13px 'IBM Plex Mono';color:#2e9e5b">82</span></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:11px"><span style="width:96px;font:500 12.5px 'Hanken Grotesk';color:#3a3833">Lage &amp; Markt</span><div style="flex:1;height:6px;border-radius:3px;background:#efece7;overflow:hidden"><div style="width:88%;height:100%;background:#2e9e5b"></div></div><span style="width:26px;text-align:right;font:600 13px 'IBM Plex Mono';color:#2e9e5b">88</span></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:11px"><span style="width:96px;font:500 12.5px 'Hanken Grotesk';color:#3a3833">Objekt &amp; WEG</span><div style="flex:1;height:6px;border-radius:3px;background:#efece7;overflow:hidden"><div style="width:54%;height:100%;background:#c2882a"></div></div><span style="width:26px;text-align:right;font:600 13px 'IBM Plex Mono';color:#c2882a">54</span></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:11px"><span style="width:96px;font:500 12.5px 'Hanken Grotesk';color:#3a3833">Doku-Risiken</span><div style="flex:1;height:6px;border-radius:3px;background:#efece7;overflow:hidden"><div style="width:{{ dokuPct }};height:100%;background:{{ dokuCol }}"></div></div><span style="width:26px;text-align:right;font:600 13px 'IBM Plex Mono';color:{{ dokuCol }}">{{ dokuVal }}</span></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 2px 2px"><span class="hint">RISIKEN</span><span style="font:600 11px 'IBM Plex Mono';color:#23211d">einkalkuliert {{ dachAmountStr }}</span></div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:4px 15px 8px;margin-top:8px">
+    <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;gap:8px;padding:13px 0 5px"><span style="width:7px;height:7px;border-radius:50%;background:#c1442d;box-shadow:0 0 0 3px #f6e7e3"></span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6b6862">OFFEN · SCHWEBEND · {{ openCount }}</span></div>
+    <sc-for list="{{ openRows }}" as="r" hint-placeholder-count="4">
+    <div onClick="{{ r.onTap }}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0ede8;cursor:pointer"><span style="width:34px;font:600 8px 'IBM Plex Mono';letter-spacing:.04em;color:{{ r.tagCol }};flex:none">{{ r.tag }}</span><span style="flex:1;min-width:0;font:500 12.5px 'Hanken Grotesk';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span><span style="font:500 11px 'IBM Plex Mono';color:{{ r.amountCol }};flex:none">{{ r.amount }}</span><svg width="12" height="12" fill="none" stroke="#c2bfb8" stroke-width="2" style="flex:none"><path d="M4 2l5 4-5 4"></path></svg></div>
+    </sc-for>
+    </sc-if>
+    <sc-if value="{{ hasDone }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:8px;padding:16px 0 5px"><svg width="12" height="12" fill="none" stroke="#8a867f" stroke-width="2.2"><path d="M2 6l3 3 5-6"></path></svg><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">ERLEDIGT · {{ doneCount }}</span></div>
+    <sc-for list="{{ doneRows }}" as="r" hint-placeholder-count="1">
+    <div onClick="{{ r.onTap }}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0ede8;cursor:pointer;opacity:.78"><span style="width:34px;font:600 8px 'IBM Plex Mono';letter-spacing:.03em;color:{{ r.tagCol }};flex:none">{{ r.tag }}</span><span style="flex:1;min-width:0;font:500 12.5px 'Hanken Grotesk';color:#3a3833;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span><span style="font:600 11px 'IBM Plex Mono';color:{{ r.amountCol }};flex:none">{{ r.amount }}</span><svg width="12" height="12" fill="none" stroke="#c2bfb8" stroke-width="2" style="flex:none"><path d="M4 2l5 4-5 4"></path></svg></div>
+    </sc-for>
+    </sc-if>
+  </div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:6px 16px 8px;margin-top:16px">
+    <div class="hint" style="padding:12px 0 4px">NÄCHSTE SCHRITTE</div>
+    <div onClick="{{ reqBeschluss }}" style="display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #f0ede8;cursor:pointer"><span style="width:19px;height:19px;border-radius:6px;border:1.8px solid #cfccc6;flex:none"></span><span style="flex:1;font:500 13px 'Hanken Grotesk';color:#3a3833">Beschluss-Sammlung anfordern</span><span style="font:600 10.5px 'IBM Plex Mono';color:#2e6f52;background:#e6f1ea;border-radius:7px;padding:4px 8px">KI-MAIL</span></div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #f0ede8"><span style="width:19px;height:19px;border-radius:6px;border:1.8px solid #cfccc6;flex:none"></span><span style="flex:1;font:500 13px 'Hanken Grotesk';color:#3a3833">Grundbuchauszug prüfen</span></div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #f0ede8"><span style="width:19px;height:19px;border-radius:6px;border:1.8px solid #cfccc6;flex:none"></span><span style="flex:1;font:500 13px 'Hanken Grotesk';color:#3a3833">Besichtigung terminieren</span></div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</sc-if>
+
+<!-- TAB: Kalkulation -->
+<sc-if value="{{ isCalc }}" hint-placeholder-val="{{ true }}">
+<div class="scrl" style="padding:16px">
+  <div style="display:flex;background:#eceae6;border-radius:12px;padding:3px;gap:3px">
+    <div onClick="{{ setBase }}" style="{{ segBase }}">Base</div>
+    <div onClick="{{ setBull }}" style="{{ segBull }}">Bull</div>
+    <div onClick="{{ setBear }}" style="{{ segBear }}">Bear</div>
+  </div>
+  <div style="background:#1c1b19;border-radius:16px;padding:16px;margin-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:600 10.5px 'IBM Plex Mono';letter-spacing:.08em;color:#8f8b83">CASHFLOW / MONAT · {{ scenarioLabel }}</span><div onClick="{{ openCalcInfo }}" style="cursor:pointer;width:26px;height:26px;border-radius:8px;background:#2a2925;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" fill="none" stroke="#a8a49c" stroke-width="1.8"><circle cx="7" cy="7" r="5.5"/><path d="M7 6.2v3.4M7 4.4v.1"/></svg></div></div>
+    <div style="display:flex;align-items:baseline;gap:11px;margin-top:6px"><span style="font:600 32px 'IBM Plex Mono';color:{{ cfColor }};letter-spacing:-.01em">{{ cfStr }}</span><span style="font:500 11px 'IBM Plex Mono';color:{{ cfAfterTaxCol }}">{{ cfAfterTaxStr }} n. Steuern</span></div>
+    <div style="display:flex;gap:16px;margin-top:14px;padding-top:13px;border-top:1px solid #33322e">
+      <div onClick="{{ openCalcInfo }}" style="flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer"><div style="font:600 8.5px 'IBM Plex Mono';color:#8f8b83;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:4px">Vermögenszuwachs <svg width="9" height="9" fill="none" stroke="#8f8b83" stroke-width="2"><path d="M3 2l3 2.5-3 2.5"/></svg></div><div style="font:600 16px 'IBM Plex Mono';color:#8fc3d0;margin-top:4px">{{ vermoegenStr }}</div></div>
+      <div style="width:1px;background:#33322e;flex:none"></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column"><div style="font:600 8.5px 'IBM Plex Mono';color:#8f8b83;letter-spacing:.05em;text-transform:uppercase">Bruttomietrendite</div><div style="font:600 16px 'IBM Plex Mono';color:#8fc3d0;margin-top:4px">{{ bruttoStr }}</div></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:13px 14px"><div style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">EK-RENDITE 10 J.</div><div style="font:600 21px 'IBM Plex Mono';color:#23211d;margin-top:5px">{{ ekRendStr }}</div></div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:13px 14px"><div style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">KAUFPREISFAKTOR</div><div style="font:600 21px 'IBM Plex Mono';color:#23211d;margin-top:5px">{{ faktorStr }}</div></div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:13px 14px"><div style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">GIK · GESAMTINVEST.</div><div style="font:600 19px 'IBM Plex Mono';color:#23211d;margin-top:5px">{{ gikStr }}</div><div style="font:400 9px 'IBM Plex Mono';color:#9a968f;margin-top:2px">KP + Nebenk. + Risiken</div></div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:13px 14px"><div style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">BANKRATE</div><div style="font:600 19px 'IBM Plex Mono';color:#23211d;margin-top:5px">{{ bankrateStr }}</div><div style="font:400 9px 'IBM Plex Mono';color:#9a968f;margin-top:2px">Zins + Tilgung</div></div>
+  </div>
+  <div onClick="{{ openCalcSheet }}" style="display:flex;align-items:center;justify-content:space-between;margin:20px 2px 8px;cursor:pointer"><span class="hint">ANNAHMEN · {{ scenarioLabel }}</span><span style="font:600 11px 'Hanken Grotesk';color:#2f5760">Anpassen</span></div>
+  <div onClick="{{ openCalcSheet }}" style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:2px 15px;cursor:pointer">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Kaufpreis</span><span style="display:flex;align-items:center;gap:8px"><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ kaufpreisStr }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2"><path d="M5 2l5 4.5-5 4.5"></path></svg></span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Sollzins</span><span style="display:flex;align-items:center;gap:8px"><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ zinsStr }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2"><path d="M5 2l5 4.5-5 4.5"></path></svg></span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Anf. Tilgung</span><span style="display:flex;align-items:center;gap:8px"><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ tilgStr }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2"><path d="M5 2l5 4.5-5 4.5"></path></svg></span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Eigenkapital</span><span style="display:flex;align-items:center;gap:8px"><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ ekStr }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2"><path d="M5 2l5 4.5-5 4.5"></path></svg></span></div>
+    <div onClick="{{ openDocs }}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Übernommene Risiken</span><span style="display:flex;align-items:center;gap:8px"><span style="font:600 13px 'IBM Plex Mono';color:{{ riskRowCol }}">{{ riskRowVal }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2"><path d="M5 2l5 4.5-5 4.5"></path></svg></span></div>
+  </div>
+  <div onClick="{{ openCalcSheet }}" style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;background:#1c1b19;border-radius:13px;font:600 13px 'Hanken Grotesk';color:#fff;cursor:pointer"><svg width="15" height="15" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2 5h11M2 10h11"></path></svg>Annahmen anpassen</div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 2px 0"><span class="hint">MIETENTWICKLUNG</span>
+    <div style="display:flex;background:#eceae6;border-radius:9px;padding:2px;gap:2px"><span onClick="{{ onAuto }}" style="{{ segAuto }}">Automatik</span><span onClick="{{ onYear }}" style="{{ segYear }}">Pro Jahr</span></div>
+  </div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:15px 16px;margin-top:10px">
+    <div style="display:flex;align-items:flex-end;gap:5px;height:64px">
+      <sc-for list="{{ bars }}" as="b" hint-placeholder-count="10"><div style="flex:1;height:{{ b.h }};background:{{ b.color }};border-radius:3px 3px 0 0"></div></sc-for>
+    </div>
+    <div style="display:flex;justify-content:space-between;font:500 9px 'IBM Plex Mono';color:#b6b2ab;padding:6px 2px 0"><span>J1</span><span>J3</span><span>J5</span><span>J8</span><span>J10</span></div>
+  </div>
+
+  <sc-if value="{{ autoMode }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:15px 16px;margin-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 13px 'Hanken Grotesk';color:#3a3833">Mietsteigerung p. a.</span><span style="font:600 14px 'IBM Plex Mono';color:#23211d">{{ steigStr }}</span></div>
+    <input type="range" min="0" max="5" step="0.1" value="{{ steig }}" onChange="{{ onSteig }}" style="background: {{ steigGrad }}">
+    <div style="display:flex;gap:8px;margin-top:12px;background:#f0eee9;border-radius:10px;padding:10px 11px"><span style="width:6px;height:6px;border-radius:50%;background:#2e9e5b;margin-top:4px;flex:none"></span><span style="font:400 11px/1.5 'IBM Plex Mono';color:#6b6862">KI-Basis: Angebotsmieten +2,3 %/Jahr. Mietpreisbremse aktiv, Kappungsgrenze 15 %/3 J.</span></div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ yearMode }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:4px 15px;margin-top:10px">
+    <sc-for list="{{ visibleRows }}" as="r" hint-placeholder-count="4">
+    <div style="padding:11px 0;border-bottom:1px solid #f0ede8">
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Jahr {{ r.year }} <sc-if value="{{ r.adjusted }}" hint-placeholder-val="{{ true }}"><span style="font:600 8.5px 'IBM Plex Mono';color:#c2882a;background:#f6efdf;border-radius:5px;padding:2px 6px;margin-left:5px">ANGEPASST</span></sc-if></span><span style="{{ r.pillStyle }}">{{ r.rentStr }}</span></div>
+      <div style="display:flex;justify-content:flex-end;align-items:baseline;margin-top:6px"><span style="font:500 10.5px 'IBM Plex Mono';color:#8a867f">Cashflow</span><span style="font:600 12px 'IBM Plex Mono';color:{{ r.cfCol }};margin-left:6px">{{ r.cfStr }}/Mo</span></div>
+      <sc-if value="{{ r.hasMeasure }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:7px;margin-top:9px;background:#e6eef0;border-radius:9px;padding:8px 10px"><span style="width:16px;height:16px;border-radius:5px;background:#4a7a86;color:#fff;font:600 9px 'IBM Plex Mono';display:flex;align-items:center;justify-content:center;flex:none">M</span><span style="flex:1;font:500 11.5px 'Hanken Grotesk';color:#2f5760">{{ r.measure.title }} · <span style="font-family:'IBM Plex Mono'">{{ r.measure.upStr }}</span></span><span style="font:600 11px 'IBM Plex Mono';color:#2f5760">{{ r.measure.investStr }}</span></div></sc-if>
+    </div>
+    </sc-for>
+    <div onClick="{{ toggleYears }}" style="text-align:center;font:500 11.5px 'IBM Plex Mono';color:#9a968f;padding:12px 0;cursor:pointer">{{ moreLabel }}</div>
+  </div>
+  <div onClick="{{ openSheet }}" style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1.5px dashed #b6cdc4;border-radius:14px;background:#fff;font:600 13px 'Hanken Grotesk';color:#2f5760;cursor:pointer"><svg width="14" height="14" fill="#4a7a86"><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="2" y="6" width="10" height="2" rx="1"></rect></svg>Maßnahme hinzufügen</div>
+  </sc-if>
+
+  <div class="hint" style="margin:20px 2px 0">KAUFNEBENKOSTEN · AUTOMATISCH</div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:16px;padding:4px 16px 10px;margin-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Grunderwerbsteuer <span style="font:500 10.5px 'IBM Plex Mono';color:#9a968f">Sachsen 5,5 %</span></span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ grunderwStr }}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Notar &amp; Grundbuch</span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ notarStr }}</span></div>
+    <div onClick="{{ openEdit }}" style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #f0ede8;cursor:pointer"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Makler <span style="font:500 10.5px 'IBM Plex Mono';color:#9a968f">{{ maklerLabel }}</span> <svg width="11" height="11" fill="none" stroke="#b6b2ab" stroke-width="1.7" style="margin-left:2px"><path d="M7.5 1.5l2 2L3.5 9.5 1 10l.5-2.5z"></path></svg></span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ maklerStr }}</span></div>
+    <sc-if value="{{ dachApplied }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;margin:6px -12px 0;background:#f6e7e3;border-radius:10px"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Übernommene Risiken <span style="font:500 10.5px 'IBM Plex Mono';color:#c1442d">aus DD</span></span><span style="font:600 13px 'IBM Plex Mono';color:#c1442d">{{ dachAmountStr }}</span></div></sc-if>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</sc-if>
+
+<!-- TAB: Dokumente -->
+<sc-if value="{{ isDocs }}" hint-placeholder-val="{{ true }}">
+<div class="scrl" style="padding:16px">
+  <div style="background:#1c1b19;border-radius:16px;padding:15px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 13.5px 'Hanken Grotesk';color:#fff">DD-Checkliste</span><span style="font:600 16px 'IBM Plex Mono';color:#fff">{{ ddStr }}</span></div>
+    <div style="height:7px;border-radius:4px;background:#3a3833;margin-top:12px;overflow:hidden"><div style="width:{{ ddPct }};height:100%;background:#2e9e5b"></div></div>
+    <div style="font:400 11px 'IBM Plex Mono';color:#8f8b83;margin-top:9px">{{ ddNote }}</div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 2px 2px"><span class="hint">MIT BEFUND · {{ flaggedCount }}</span></div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:2px 14px 6px;margin-top:8px">
+    <sc-for list="{{ flaggedDocs }}" as="d" hint-placeholder-count="2">
+    <div onClick="{{ d.onOpen }}" style="display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #f0ede8;cursor:pointer"><span style="width:8px;height:8px;border-radius:50%;background:{{ d.dotCol }};flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.note }}</div></div><span style="font:600 9.5px 'IBM Plex Mono';color:{{ d.bCol }};background:{{ d.bBg }};border-radius:6px;padding:4px 8px;flex:none">{{ d.bText }}</span><svg width="13" height="13" fill="none" stroke="#c2bfb8" stroke-width="2" style="flex:none"><path d="M5 2l5 4.5-5 4.5"></path></svg></div>
+    </sc-for>
+  </div>
+
+  <div class="hint" style="margin:16px 2px 2px">GEPRÜFT · UNAUFFÄLLIG</div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:2px 14px 4px;margin-top:8px">
+    <sc-if value="{{ docsExpanded }}" hint-placeholder-val="{{ false }}">
+    <sc-for list="{{ okDocs }}" as="d" hint-placeholder-count="5">
+    <div onClick="{{ d.onOpen }}" style="display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid #f0ede8;cursor:pointer"><span style="width:8px;height:8px;border-radius:50%;background:{{ d.dotCol }};flex:none"></span><span style="flex:1;min-width:0;font:500 12.5px 'Hanken Grotesk';color:#3a3833;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</span><span style="font:400 10.5px 'IBM Plex Mono';color:#9a968f;flex:none">{{ d.bText }}</span><svg width="12" height="12" fill="none" stroke="#c2bfb8" stroke-width="2" style="flex:none"><path d="M5 2l5 4.5-5 4.5"></path></svg></div>
+    </sc-for>
+    </sc-if>
+    <div onClick="{{ toggleDocs }}" style="text-align:center;font:600 11.5px 'IBM Plex Mono';color:#2f5760;padding:11px 0;cursor:pointer">{{ okLabel }}</div>
+  </div>
+
+  <div class="hint" style="margin:16px 2px 0">FEHLT NOCH · {{ missingCount }}</div>
+  <div style="background:#faf9f7;border:1px dashed #d8d5cf;border-radius:14px;padding:2px 14px 6px;margin-top:8px">
+    <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #efece7"><span style="width:8px;height:8px;border-radius:50%;background:#cfccc6;flex:none"></span><span style="flex:1;min-width:0;font:500 12.5px 'Hanken Grotesk';color:#6b6862;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</span><div onClick="{{ m.onReq }}" style="font:600 9.5px 'IBM Plex Mono';color:#2e6f52;background:#e6f1ea;border-radius:6px;padding:5px 9px;cursor:pointer;flex:none">Anfordern</div></div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <div onClick="{{ addPhotos }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:16px 8px;border:1.5px dashed #b6cdc4;border-radius:14px;background:#fff;cursor:pointer"><svg width="20" height="20" fill="none" stroke="#4a7a86" stroke-width="1.7"><rect x="2" y="4" width="16" height="12" rx="2"></rect><circle cx="7" cy="9" r="1.8"></circle><path d="M2 14l4.5-4 4 3 3-2.5L18 14"></path></svg><span style="font:600 12px 'Hanken Grotesk';color:#2f5760">Fotos hochladen</span><span style="font:400 9.5px 'IBM Plex Mono';color:#8a867f;text-align:center">KI findet Mängel</span></div>
+    <div onClick="{{ openDocFlow }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:16px 8px;border:1.5px dashed #cfccc6;border-radius:14px;background:#fff;cursor:pointer"><svg width="20" height="20" fill="none" stroke="#3a3833" stroke-width="1.7"><path d="M10 3v10M6 9l4 4 4-4"></path><path d="M3 15v2h14v-2"></path></svg><span style="font:600 12px 'Hanken Grotesk';color:#3a3833">Dokument</span><span style="font:400 9.5px 'IBM Plex Mono';color:#8a867f;text-align:center">PDF · Datei</span></div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</sc-if>
+
+<!-- TAB: Chat -->
+<sc-if value="{{ isChat }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e7e4df">
+  <div onClick="{{ openChatList }}" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer">
+    <svg width="16" height="16" fill="none" stroke="#6b6862" stroke-width="1.7" style="flex:none"><path d="M2 4h12M2 8h12M2 12h7"></path></svg>
+    <div style="min-width:0"><div style="font:600 13px 'Hanken Grotesk';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ chatTitle }}</div><sc-if value="{{ chatHasLinked }}" hint-placeholder-val="{{ false }}"><div style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ chatLinked }}</div></sc-if></div>
+    <svg width="12" height="12" fill="none" stroke="#b6b2ab" stroke-width="2" style="flex:none"><path d="M3 5l3 3 3-3"></path></svg>
+  </div>
+  <div onClick="{{ newChat }}" style="flex:none;display:flex;align-items:center;gap:5px;background:#f0eee9;border-radius:9px;padding:7px 11px;cursor:pointer"><svg width="13" height="13" fill="#3a3833"><rect x="5.5" y="1.5" width="2" height="10" rx="1"></rect><rect x="1.5" y="5.5" width="10" height="2" rx="1"></rect></svg><span style="font:600 11.5px 'Hanken Grotesk';color:#3a3833">Neu</span></div>
+</div>
+<div class="scrl" style="padding:18px 16px">
+  <sc-for list="{{ chat }}" as="m" hint-placeholder-count="2">
+  <div style="{{ m.rowStyle }}">
+    <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ true }}"><div style="width:26px;height:26px;border-radius:8px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none;margin-right:9px"><span style="font:600 9px 'IBM Plex Mono';color:#fff">KI</span></div></sc-if>
+    <div style="max-width:82%">
+      <div style="{{ m.bubbleStyle }}">{{ m.text }}</div>
+      <sc-if value="{{ m.hasSource }}" hint-placeholder-val="{{ true }}"><div style="margin-top:8px"><span style="font:500 10.5px 'IBM Plex Mono';color:#6b6862;background:#fff;border:1px solid #e7e4df;border-radius:7px;padding:4px 8px;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" fill="none" stroke="#8a867f" stroke-width="1.6"><rect x="2" y="2" width="7" height="7" rx="1"></rect></svg>{{ m.source }}</span></div></sc-if>
+    </div>
+  </div>
+  <div style="height:16px"></div>
+  </sc-for>
+  <sc-if value="{{ typing }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:8px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 9px 'IBM Plex Mono';color:#fff">KI</span></div><div style="background:#fff;border:1px solid #e7e4df;border-radius:4px 14px 14px 14px;padding:12px 14px;font:600 14px 'IBM Plex Mono';color:#b6b2ab;letter-spacing:2px">•••</div></div></sc-if>
+</div>
+<div style="flex:none;background:#fff;border-top:1px solid #e7e4df;padding:11px 0 24px">
+  <div style="display:flex;gap:7px;overflow-x:auto;padding:0 14px 11px">
+    <span onClick="{{ sugA }}" style="flex:none;font:500 12px 'Hanken Grotesk';color:#3a3833;background:#f0eee9;border-radius:20px;padding:7px 12px;white-space:nowrap;cursor:pointer">Fass die Protokolle zusammen</span>
+    <span onClick="{{ sugB }}" style="flex:none;font:500 12px 'Hanken Grotesk';color:#3a3833;background:#f0eee9;border-radius:20px;padding:7px 12px;white-space:nowrap;cursor:pointer">Was bei Zins 4,5 %?</span>
+    <span onClick="{{ sugC }}" style="flex:none;font:500 12px 'Hanken Grotesk';color:#3a3833;background:#f0eee9;border-radius:20px;padding:7px 12px;white-space:nowrap;cursor:pointer">Fragen an den Verkäufer</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;padding:0 14px">
+    <input value="{{ chatInput }}" onInput="{{ onChatInput }}" onKeyDown="{{ onChatKey }}" placeholder="Frage zum Deal …" style="flex:1;background:#f0eee9;border:none;border-radius:22px;padding:12px 16px;font:400 13.5px 'Hanken Grotesk';color:#23211d;outline:none">
+    <div onClick="{{ sendChat }}" style="width:42px;height:42px;border-radius:50%;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="19" height="19" fill="none" stroke="#fff" stroke-width="2"><path d="M9.5 15V4M5 8.5l4.5-4.5 4.5 4.5"></path></svg></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showHome }}" hint-placeholder-val="{{ true }}"><div style="flex:none;padding:9px 0 11px;display:flex;justify-content:center"><div style="width:134px;height:5px;border-radius:3px;background:#1c1b19;opacity:.8"></div></div></sc-if>
+</div>
+</sc-if>
+
+<!-- ========================= RISIKO-DETAIL ========================= -->
+<sc-if value="{{ isRisk }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+<div style="background:#fff;flex:none;border-bottom:1px solid #e7e4df;padding:4px 14px 14px;display:flex;align-items:center;gap:12px">
+  <div onClick="{{ backToDetail }}" style="cursor:pointer"><svg width="20" height="20" fill="none" stroke="#23211d" stroke-width="2"><path d="M13 4l-7 6 7 6"></path></svg></div>
+  <div style="flex:1"><div style="font:600 15px 'Hanken Grotesk';color:#23211d">Risiko-Detail</div><div style="font:400 11px 'IBM Plex Mono';color:#6b6862;margin-top:2px">Lindenstraße 14</div></div>
+</div>
+<div class="scrl" style="padding:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:{{ rStatusBg }};border-radius:8px;padding:5px 10px"><span style="width:7px;height:7px;border-radius:50%;background:{{ rStatusDot }}"></span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.06em;color:{{ rStatusCol }}">{{ rStatusText }}</span></div>
+    <sc-if value="{{ riskIsDone }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" fill="none" stroke="#b6b2ab" stroke-width="1.8"><rect x="3" y="7" width="9" height="6" rx="1.5"></rect><path d="M5 7V5a2.5 2.5 0 015 0v2"></path></svg></sc-if>
+  </div>
+  <div style="font:700 20px/1.3 'Bricolage Grotesque';color:#23211d;margin-top:12px;letter-spacing:-.01em">{{ rk.title }}</div>
+  <div style="font:400 13.5px/1.55 'Hanken Grotesk';color:#3a3833;margin-top:8px">{{ rk.desc }}</div>
+
+  <sc-if value="{{ rHasQuote }}" hint-placeholder-val="{{ true }}">
+  <div class="hint" style="margin:20px 2px 8px">FUNDSTELLE</div>
+  <div style="background:#fff;border:1px solid #e7e4df;border-left:4px solid {{ rStatusDot }};border-radius:12px;padding:14px 15px">
+    <div style="font:400 13.5px/1.6 'Hanken Grotesk';color:#3a3833;font-style:italic">{{ rk.quote }}</div>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:11px;border-top:1px solid #f0ede8"><svg width="12" height="13" fill="none" stroke="#8a867f" stroke-width="1.6"><path d="M2.5 1h5l2.5 2.5v8.5h-7.5z"></path></svg><span style="font:500 11px 'IBM Plex Mono';color:#6b6862">{{ rk.source }}</span></div>
+  </div>
+  </sc-if>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px {{ rBoxBorder }};border-radius:12px;padding:13px 14px;margin-top:14px">
+    <div><div style="font:500 11.5px 'Hanken Grotesk';color:#6b6862">{{ rEstLabel }}</div><sc-if value="{{ riskIsOpen }}" hint-placeholder-val="{{ true }}"><div style="font:400 9.5px 'IBM Plex Mono';color:#9a968f;margin-top:2px">zählt noch nicht in die Kalkulation</div></sc-if></div>
+    <span style="font:600 15px 'IBM Plex Mono';color:{{ rEffectCol }}">{{ rEffectStr }}</span>
+  </div>
+
+  <!-- OFFEN -->
+  <sc-if value="{{ riskIsOpen }}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{ riskBig }}" hint-placeholder-val="{{ true }}">
+  <div onClick="{{ addSurveyor }}" style="display:flex;align-items:center;gap:11px;background:#e6eef0;border-radius:13px;padding:13px 14px;margin-top:12px;cursor:pointer">
+    <div style="width:36px;height:36px;border-radius:10px;background:#4a7a86;display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 2l6 3v4c0 4-3 6-6 7-3-1-6-3-6-7V5z"></path></svg></div>
+    <div style="flex:1"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d">Bausachverständigen dazuholen</div><div style="font:400 10.5px 'IBM Plex Mono';color:#2f5760;margin-top:2px">Bei größeren Sachen · Kontakt stellen wir</div></div>
+    <svg width="14" height="14" fill="none" stroke="#2f5760" stroke-width="2" style="flex:none"><path d="M5 2l5 5-5 5"></path></svg>
+  </div>
+  </sc-if>
+  <div onClick="{{ openWizard }}" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Risiko jetzt bewerten</div>
+  <div style="font:400 10.5px 'IBM Plex Mono';color:#9a968f;text-align:center;margin-top:9px">übernehmen · akzeptieren · Kontext geben</div>
+  </sc-if>
+
+  <!-- ERLEDIGT -->
+  <sc-if value="{{ riskIsDone }}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ rHasSurveyor }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:11px 14px;margin-top:9px">
+    <div style="width:30px;height:30px;border-radius:9px;background:#e6eef0;display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" fill="none" stroke="#2f5760" stroke-width="1.8"><path d="M7.5 1.5l5 2.5v3.5c0 3.5-2.5 5-5 6-2.5-1-5-2.5-5-6V4z"></path></svg></div>
+    <div style="flex:1"><div style="font:600 11.5px 'Hanken Grotesk';color:#23211d">{{ rSurveyorName }}</div><div style="font:400 10px 'IBM Plex Mono';color:#8a867f;margin-top:1px">{{ rSurveyorMeta }}</div></div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ rHasContext }}" hint-placeholder-val="{{ false }}">
+  <div style="background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:12px 14px;margin-top:9px"><div style="font:400 12px/1.5 'Hanken Grotesk';color:#3a3833;font-style:italic">{{ rContextText }}</div><div style="display:flex;align-items:center;gap:6px;margin-top:9px;padding-top:9px;border-top:1px solid #f0ede8;font:400 10px 'IBM Plex Mono';color:#8a867f"><span style="width:5px;height:5px;border-radius:50%;background:#4a7a86"></span>Eigener Kontext</div></div>
+  </sc-if>
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <div onClick="{{ openWizard }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;background:#fff;border:1px solid #d8d5cf;border-radius:13px;font:600 12.5px 'Hanken Grotesk';color:#2f5760;cursor:pointer"><svg width="14" height="14" fill="none" stroke="#2f5760" stroke-width="1.8"><path d="M3 4v3h3M13 10V7h-3"></path><path d="M4 7a5 5 0 019-1M12 7a5 5 0 01-9 1"></path></svg>Aktualisieren</div>
+    <div onClick="{{ reopenRisk }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;background:#fff;border:1px solid #d8d5cf;border-radius:13px;font:600 12.5px 'Hanken Grotesk';color:#3a3833;cursor:pointer"><svg width="14" height="14" fill="none" stroke="#3a3833" stroke-width="1.8"><path d="M7 2a5 5 0 105 5"></path><path d="M7 4V.5M9 5h3.5"></path></svg>Neu eröffnen</div>
+  </div>
+  </sc-if>
+  <div style="height:8px"></div>
+</div>
+</div>
+</sc-if>
+
+<!-- ========================= TOAST ========================= -->
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;bottom:38px;left:50%;transform:translateX(-50%);background:#1c1b19;color:#fff;border-radius:12px;padding:12px 18px;font:500 13px 'Hanken Grotesk';box-shadow:0 8px 24px -6px rgba(0,0,0,.4);z-index:50;display:flex;align-items:center;gap:9px;white-space:nowrap;animation:tin .22s ease-out;max-width:88%"><svg width="16" height="16" fill="none" stroke="#2e9e5b" stroke-width="2.4"><path d="M3 8.5l3.5 3.5 6.5-8"></path></svg>{{ toast }}</div>
+</sc-if>
+
+<!-- ========================= MAßNAHME-SHEET ========================= -->
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;padding:8px 20px 30px;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3)">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 16px"></div>
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px"><span style="width:22px;height:22px;border-radius:7px;background:#4a7a86;color:#fff;font:600 10px 'IBM Plex Mono';display:flex;align-items:center;justify-content:center">M</span><span style="font:700 19px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Maßnahme hinzufügen</span></div>
+  <div style="font:400 12px 'Hanken Grotesk';color:#6b6862;margin-bottom:16px">Einmalige Investition, die ab einem Jahr die Miete erhöht.</div>
+
+  <div class="hint" style="color:#8a867f">TITEL</div>
+  <input value="{{ draft.title }}" onInput="{{ onDraftTitle }}" placeholder="z. B. Bad-Sanierung" class="tinp" style="margin-top:6px;font-family:'Hanken Grotesk'">
+
+  <div style="display:flex;gap:12px;margin-top:14px">
+    <div style="flex:1"><div class="hint" style="color:#8a867f">INVESTITION €</div><input type="number" value="{{ draft.invest }}" onChange="{{ onDraftInvest }}" class="tinp" style="margin-top:6px"></div>
+    <div style="flex:1"><div class="hint" style="color:#8a867f">MIETE +€/MO</div><input type="number" value="{{ draft.uplift }}" onChange="{{ onDraftUplift }}" class="tinp" style="margin-top:6px"></div>
+  </div>
+
+  <div class="hint" style="color:#8a867f;margin-top:14px">AB JAHR</div>
+  <div style="display:flex;align-items:center;gap:14px;margin-top:8px">
+    <div onClick="{{ draftYearDec }}" style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid #e7e4df;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" fill="#23211d"><rect x="3" y="7" width="10" height="2" rx="1"></rect></svg></div>
+    <div style="flex:1;text-align:center;font:600 22px 'IBM Plex Mono';color:#23211d">Jahr {{ draft.year }}</div>
+    <div onClick="{{ draftYearInc }}" style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid #e7e4df;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" fill="#23211d"><rect x="7" y="3" width="2" height="10" rx="1"></rect><rect x="3" y="7" width="10" height="2" rx="1"></rect></svg></div>
+  </div>
+
+  <div onClick="{{ addMeasure }}" style="margin-top:22px;display:flex;align-items:center;justify-content:center;padding:15px;background:#4a7a86;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Maßnahme übernehmen</div>
+</div>
+</sc-if>
+
+<!-- ========================= DEAL ANLEGEN ========================= -->
+<sc-if value="{{ createOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:63;background:#f7f5f2;display:flex;flex-direction:column;animation:fin .2s ease-out">
+  <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e7e4df"><div onClick="{{ closeCreate }}" style="cursor:pointer;flex:none"><svg width="18" height="18" fill="none" stroke="#23211d" stroke-width="2"><path d="M4 4l10 10M14 4L4 14"></path></svg></div><span style="flex:1;font:700 15px 'Bricolage Grotesque';color:#23211d">Neuer Deal</span></div>
+  <div style="flex:1;overflow:auto;padding:16px">
+    <div onClick="{{ openDocFlow }}" style="display:flex;align-items:center;gap:9px;background:#fff;border:1px dashed #b6cdc4;border-radius:11px;padding:11px 13px;cursor:pointer"><svg width="16" height="16" fill="none" stroke="#4a7a86" stroke-width="1.7" style="flex:none"><path d="M8 3v9M5 8l3 3 3-3"></path><path d="M3 13v1h10v-1"></path></svg><span style="flex:1;font:500 12px 'Hanken Grotesk';color:#2f5760">Unterlagen hochladen / Portal-Link</span><span style="font:400 10px 'IBM Plex Mono';color:#8a867f">optional</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:15px 0 6px"><div style="flex:1;height:1px;background:#e0ddd7"></div><span style="font:500 9.5px 'IBM Plex Mono';color:#b6b2ab">ODER SELBST EINTRAGEN</span><div style="flex:1;height:1px;background:#e0ddd7"></div></div>
+
+    <div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f;margin-top:10px">OBJEKTART</div>
+    <div style="display:flex;background:#eceae6;border-radius:10px;padding:3px;gap:3px;margin-top:6px"><span onClick="{{ cSetETW }}" style="{{ cArtETW }}">ETW</span><span onClick="{{ cSetMFH }}" style="{{ cArtMFH }}">MFH</span><span onClick="{{ cSetHaus }}" style="{{ cArtHaus }}">Haus</span></div>
+
+    <div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f;margin-top:14px">ADRESSE <span style="color:#b6b2ab">· optional</span></div>
+    <input value="{{ cf.street }}" onInput="{{ onCStreet }}" placeholder="Straße &amp; Nr. (falls bekannt)" style="width:100%;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;margin-top:6px;font:400 13px 'Hanken Grotesk';color:#23211d;outline:none">
+    <div style="display:flex;gap:9px;margin-top:8px"><input value="{{ cf.plz }}" onInput="{{ onCPlz }}" placeholder="PLZ" style="width:104px;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;font:400 13px 'Hanken Grotesk';color:#23211d;outline:none"><input value="{{ cf.ort }}" onInput="{{ onCOrt }}" placeholder="Ort" style="flex:1;min-width:0;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;font:400 13px 'Hanken Grotesk';color:#23211d;outline:none"></div>
+
+    <div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f;margin-top:14px">STATUS</div>
+    <div style="display:flex;background:#eceae6;border-radius:10px;padding:3px;gap:3px;margin-top:6px"><span onClick="{{ cSetVermJa }}" style="{{ cVermJa }}">Aktuell vermietet</span><span onClick="{{ cSetVermNein }}" style="{{ cVermNein }}">Nicht vermietet</span></div>
+
+    <div style="display:flex;gap:9px;margin-top:14px">
+      <div style="flex:1"><div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">KAUFPREIS</div><input value="{{ cf.preis }}" onInput="{{ onCPreis }}" placeholder="€" style="width:100%;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;margin-top:6px;font:600 13px 'IBM Plex Mono';color:#23211d;outline:none"></div>
+      <div style="flex:1"><div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">WOHNFLÄCHE</div><input value="{{ cf.qm }}" onInput="{{ onCQm }}" placeholder="m²" style="width:100%;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;margin-top:6px;font:600 13px 'IBM Plex Mono';color:#23211d;outline:none"></div>
+    </div>
+    <div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f;margin-top:14px">KALTMIETE / MONAT <span style="color:#b6b2ab">· optional</span></div>
+    <input value="{{ cf.rent }}" onInput="{{ onCRent }}" placeholder="€" style="width:100%;background:#fff;border:1px solid #e7e4df;border-radius:10px;padding:11px 13px;margin-top:6px;font:600 13px 'IBM Plex Mono';color:#23211d;outline:none">
+    <div style="height:8px"></div>
+  </div>
+  <div style="flex:none;padding:12px 16px 22px;background:#fff;border-top:1px solid #e7e4df"><div onClick="{{ submitCreate }}" style="display:flex;align-items:center;justify-content:center;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Deal anlegen</div></div>
+</div>
+</sc-if>
+
+<!-- ========================= DOKUMENT-VIEWER ========================= -->
+<sc-if value="{{ docViewerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:63;background:#f7f5f2;display:flex;flex-direction:column;animation:fin .2s ease-out">
+  <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e7e4df">
+    <div onClick="{{ closeDocViewer }}" style="cursor:pointer;flex:none"><svg width="18" height="18" fill="none" stroke="#23211d" stroke-width="2"><path d="M11 3l-6 6 6 6"></path></svg></div>
+    <div style="flex:1;min-width:0"><div style="font:700 15px 'Bricolage Grotesque';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dv.name }}</div><div style="font:400 10px 'IBM Plex Mono';color:#8a867f;margin-top:1px">{{ dvPagesStr }}</div></div>
+    <span style="font:600 9.5px 'IBM Plex Mono';color:{{ dvBCol }};background:{{ dvBBg }};border-radius:6px;padding:4px 8px;flex:none">{{ dvBText }}</span>
+  </div>
+  <div style="flex:1;overflow:auto;padding:16px">
+    <div style="background:#1c1b19;border-radius:14px;padding:14px 15px">
+      <div style="display:flex;align-items:center;gap:7px"><span style="width:6px;height:6px;border-radius:50%;background:#7fd0a1"></span><span style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.12em;color:#8f8b83">KI-ZUSAMMENFASSUNG</span></div>
+      <div style="font:400 13.5px/1.55 'Hanken Grotesk';color:#f4f2ef;margin-top:9px">{{ dv.summary }}</div>
+    </div>
+    <sc-if value="{{ dvHasQuote }}" hint-placeholder-val="{{ true }}">
+    <div class="hint" style="margin:18px 2px 8px">FUNDSTELLE</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-left:4px solid {{ dvDotCol }};border-radius:12px;padding:14px 15px">
+      <div style="font:400 13px/1.6 'Hanken Grotesk';color:#3a3833;font-style:italic">{{ dv.quote }}</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid #f0ede8"><svg width="11" height="12" fill="none" stroke="#8a867f" stroke-width="1.6"><path d="M2.5 1h4l2 2v8h-6z"></path></svg><span style="font:500 10.5px 'IBM Plex Mono';color:#6b6862">{{ dv.name }} · {{ dv.src }}</span></div>
+    </div>
+    </sc-if>
+    <div class="hint" style="margin:18px 2px 8px">DOKUMENT</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:22px 20px;display:flex;flex-direction:column;gap:9px">
+      <div style="height:11px;width:52%;border-radius:3px;background:#ece9e4"></div>
+      <div style="height:8px;width:100%;border-radius:3px;background:#f1efec"></div>
+      <div style="height:8px;width:96%;border-radius:3px;background:#f1efec"></div>
+      <div style="height:8px;width:88%;border-radius:3px;background:#f1efec"></div>
+      <div style="height:8px;width:92%;border-radius:3px;background:#f1efec;margin-bottom:6px"></div>
+      <div style="height:8px;width:40%;border-radius:3px;background:#ece9e4;margin-top:4px"></div>
+      <div style="height:8px;width:100%;border-radius:3px;background:#f1efec"></div>
+      <div style="height:8px;width:70%;border-radius:3px;background:#f1efec"></div>
+      <div style="text-align:center;font:400 10px 'IBM Plex Mono';color:#b6b2ab;margin-top:8px">Vorschau · Original öffnen</div>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+  <div style="flex:none;padding:12px 16px 22px;background:#fff;border-top:1px solid #e7e4df;display:flex;gap:10px">
+    <div onClick="{{ openChat }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;background:#fff;border:1px solid #d8d5cf;border-radius:13px;font:600 13px 'Hanken Grotesk';color:#2f5760;cursor:pointer"><svg width="15" height="15" fill="none" stroke="#2f5760" stroke-width="1.7"><path d="M2 3h11v7H6l-3 3v-3H2z"></path></svg>Zum Dokument fragen</div>
+    <div onClick="{{ closeDocViewer }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:14px 22px;background:#1c1b19;border-radius:13px;font:600 13px 'Hanken Grotesk';color:#fff;cursor:pointer">Fertig</div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= DOKUMENTEN-FLOW ========================= -->
+<sc-if value="{{ docFlowOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:62;background:#f7f5f2;display:flex;flex-direction:column;animation:fin .2s ease-out">
+  <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e7e4df">
+    <div onClick="{{ closeDocFlow }}" style="cursor:pointer;flex:none"><svg width="18" height="18" fill="none" stroke="#23211d" stroke-width="2"><path d="M4 4l10 10M14 4L4 14"></path></svg></div>
+    <div style="flex:1;font:700 15px 'Bricolage Grotesque';color:#23211d">Dokumente</div>
+  </div>
+
+  <!-- ADD -->
+  <sc-if value="{{ docStepAdd }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;overflow:auto;padding:16px">
+    <div style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Dokumente hinzufügen</div>
+    <div style="font:400 12.5px 'Hanken Grotesk';color:#6b6862;margin-top:3px">Alles reinwerfen – die KI liest und ordnet automatisch alles ein.</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:9px;border:1.5px dashed #b6cdc4;border-radius:14px;background:#fff;padding:20px;margin-top:14px"><svg width="20" height="20" fill="none" stroke="#4a7a86" stroke-width="1.7"><path d="M10 3v10M6 9l4 4 4-4"></path><path d="M3 15v2h14v-2"></path></svg><span style="font:600 13px 'Hanken Grotesk';color:#2f5760">Dateien / Kamera / Fotos</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:15px 2px 8px"><span style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">HINZUGEFÜGT · 3</span></div>
+    <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:11px 13px"><svg width="17" height="19" fill="none" stroke="#8a867f" stroke-width="1.6" style="flex:none"><path d="M3 1h7l4 4v13H3z"></path><path d="M10 1v4h4"></path></svg><div style="flex:1;min-width:0"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d">expose_lindenstr.pdf</div><div style="font:400 10px 'IBM Plex Mono';color:#8a867f;margin-top:1px">2,4 MB</div></div><svg width="14" height="14" fill="none" stroke="#c2bfb8" stroke-width="1.8" style="flex:none"><path d="M3 3l8 8M11 3l-8 8"></path></svg></div>
+    <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:11px 13px;margin-top:8px"><svg width="17" height="19" fill="none" stroke="#8a867f" stroke-width="1.6" style="flex:none"><path d="M3 1h7l4 4v13H3z"></path><path d="M10 1v4h4"></path></svg><div style="flex:1;min-width:0"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d">etv_protokolle_23-25.pdf</div><div style="font:400 10px 'IBM Plex Mono';color:#8a867f;margin-top:1px">6,1 MB · 3 Jahrgänge</div></div><svg width="14" height="14" fill="none" stroke="#c2bfb8" stroke-width="1.8" style="flex:none"><path d="M3 3l8 8M11 3l-8 8"></path></svg></div>
+    <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:11px 13px;margin-top:8px"><svg width="17" height="17" fill="none" stroke="#8a867f" stroke-width="1.6" style="flex:none"><rect x="2" y="3" width="13" height="11" rx="1.5"></rect><circle cx="6" cy="7" r="1.4"></circle><path d="M2 12l4-3 3 2 3-2.5L15 11"></path></svg><div style="flex:1;min-width:0"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d">fotos_objekt (5)</div><div style="font:400 10px 'IBM Plex Mono';color:#8a867f;margin-top:1px">JPG</div></div><svg width="14" height="14" fill="none" stroke="#c2bfb8" stroke-width="1.8" style="flex:none"><path d="M3 3l8 8M11 3l-8 8"></path></svg></div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:11px 13px;margin-top:12px"><div style="font:600 9px 'IBM Plex Mono';letter-spacing:.08em;color:#8a867f">KONTEXT · OPTIONAL</div><textarea value="{{ docContext }}" onInput="{{ onDocContext }}" placeholder="z. B. „Verkäufer sagt, Dach sei 2019 neu gemacht" …"="" style="width:100%;border:none;outline:none;resize:none;background:none;font:400 12.5px/1.5 'Hanken Grotesk';color:#23211d;margin-top:6px;min-height:44px"></textarea></div>
+  </div>
+  <div style="flex:none;padding:12px 16px 22px;background:#fff;border-top:1px solid #e7e4df"><div onClick="{{ startAnalyze }}" style="display:flex;align-items:center;justify-content:center;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Analysieren</div></div>
+  </sc-if>
+
+  <!-- ANALYZING -->
+  <sc-if value="{{ docStepAnalyzing }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 28px;background:#1c1b19">
+    <div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center">
+      <div style="position:absolute;inset:0;border-radius:50%;border:2px solid #33322e"></div>
+      <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#7fd0a1;animation:spin 1.1s linear infinite"></div>
+      <div style="position:absolute;inset:15px;border-radius:50%;background:#26251f;animation:pulse 1.8s ease-in-out infinite"></div>
+      <svg width="32" height="32" fill="none" stroke="#7fd0a1" stroke-width="1.6" style="position:relative"><path d="M7 3h10l4 4v20H7z"></path><path d="M17 3v4h4"></path><path d="M11 14h9M11 18h9M11 22h6"></path></svg>
+    </div>
+    <div style="font:700 18px 'Bricolage Grotesque';color:#fff;letter-spacing:-.01em;margin-top:22px">KI analysiert …</div>
+    <div style="font:400 12.5px/1.55 'Hanken Grotesk';color:#a8a49c;margin-top:6px;text-align:center;max-width:250px">Deine Dokumente werden gelesen und eingeordnet. Das dauert einen Moment – du kannst die App schließen, wir melden uns.</div>
+    <div style="font:500 11px 'IBM Plex Mono';color:#7fd0a1;margin-top:16px;letter-spacing:.04em">liest 3 Dokumente · 5 Fotos</div>
+  </div>
+  </sc-if>
+
+  <!-- QUESTION -->
+  <sc-if value="{{ docStepQuestion }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:inline-flex;align-items:center;gap:6px;background:#e6eef0;border-radius:8px;padding:5px 10px"><span style="width:6px;height:6px;border-radius:50%;background:#4a7a86"></span><span style="font:600 9.5px 'IBM Plex Mono';letter-spacing:.06em;color:#2f5760">RÜCKFRAGE · 1 VON 2</span></div><span onClick="{{ skipQuestion }}" style="font:500 11px 'Hanken Grotesk';color:#9a968f;cursor:pointer">Überspringen</span></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <div style="width:26px;height:26px;border-radius:8px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 8px 'IBM Plex Mono';color:#fff">KI</span></div>
+      <div style="background:#fff;border:1px solid #e7e4df;border-radius:4px 13px 13px 13px;padding:12px 13px;font:400 13px/1.5 'Hanken Grotesk';color:#23211d">Im Wirtschaftsplan finde ich zwei mögliche Hausgeld-Werte. Welcher ist der <b>nicht umlegbare</b> Anteil?</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:13px">
+      <div onClick="{{ answerQuestion }}" style="background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">115 €/Monat</span><span style="font:400 10px 'IBM Plex Mono';color:#8a867f">S. 2</span></div>
+      <div onClick="{{ answerQuestion }}" style="background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">248 €/Monat</span><span style="font:400 10px 'IBM Plex Mono';color:#8a867f">S. 4</span></div>
+    </div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:12px 13px;margin-top:8px;font:400 12px 'Hanken Grotesk';color:#b6b2ab">Eigene Antwort / Kontext …</div>
+  </div>
+  </sc-if>
+
+  <!-- RESULT -->
+  <sc-if value="{{ docStepResult }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding:16px">
+    <div style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Eingeordnet</div>
+    <div style="font:400 12px 'Hanken Grotesk';color:#6b6862;margin-top:3px">3 Dokumente · aus der ETV-Datei wurden 3 Jahrgänge getrennt. Tippen zum Ändern.</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:12px 13px;margin-top:13px">
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">expose_lindenstr.pdf</span><span style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;background:#e6eef0;border-radius:6px;padding:4px 8px">Exposé ▾</span></div>
+      <div style="font:400 11.5px/1.45 'Hanken Grotesk';color:#6b6862;margin-top:6px">68 m² ETW, Baujahr 1998, Kaltmiete 800 €, Angebot 189.000 €.</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:6px 13px 4px;margin-top:9px">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 0"><svg width="13" height="13" fill="none" stroke="#4a7a86" stroke-width="1.8"><path d="M3 6h7M3 3h7M3 9h4"></path></svg><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.05em;color:#4a7a86">AUS 1 DATEI AUFGETEILT</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid #f0ede8"><span style="font:500 12px 'Hanken Grotesk';color:#23211d">ETV-Protokoll 2025</span><span style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;background:#e6eef0;border-radius:6px;padding:3px 7px">Protokoll ▾</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid #f0ede8"><span style="font:500 12px 'Hanken Grotesk';color:#23211d">ETV-Protokoll 2024</span><span style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;background:#e6eef0;border-radius:6px;padding:3px 7px">Protokoll ▾</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid #f0ede8"><span style="font:500 12px 'Hanken Grotesk';color:#23211d">ETV-Protokoll 2023</span><span style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;background:#e6eef0;border-radius:6px;padding:3px 7px">Protokoll ▾</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;background:#f6efdf;border-radius:11px;padding:11px 13px;margin-top:9px"><span style="width:7px;height:7px;border-radius:50%;background:#c2882a;flex:none"></span><span style="flex:1;font:500 11.5px 'Hanken Grotesk';color:#3a3833">fotos_objekt → 1 Hinweis (Feuchtefleck)</span><span style="font:500 9.5px 'IBM Plex Mono';color:#c2882a;background:#fff;border-radius:6px;padding:3px 7px">Fotos ▾</span></div>
+    <div onClick="{{ reAnalyze }}" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:14px;cursor:pointer"><svg width="13" height="13" fill="none" stroke="#8a867f" stroke-width="1.7"><path d="M2.5 3.5v3h3M11 9.5V6.5h-3"></path><path d="M3.5 6.5a4 4 0 017-1.2M10.5 6.5a4 4 0 01-7 1.2"></path></svg><span style="font:600 12px 'Hanken Grotesk';color:#6b6862">Falsch erkannt? Mit Hinweisen neu analysieren</span></div>
+  </div>
+  <div style="flex:none;padding:12px 16px 22px;background:#fff;border-top:1px solid #e7e4df"><div onClick="{{ applyDocFlow }}" style="display:flex;align-items:center;justify-content:center;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Übernehmen</div></div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ========================= PIPELINE-ACTIONMENÜ ========================= -->
+<sc-if value="{{ pipeMenuOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closePipeMenu }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);padding:8px 16px 28px">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 14px"></div>
+  <div onClick="{{ toastPlus }}" style="display:flex;align-items:center;gap:13px;background:#1c1b19;border-radius:13px;padding:14px;cursor:pointer">
+    <svg width="18" height="18" fill="#fff" style="flex:none"><rect x="8" y="2.5" width="2" height="13" rx="1"></rect><rect x="2.5" y="8" width="13" height="2" rx="1"></rect></svg>
+    <div style="font:600 13.5px 'Hanken Grotesk';color:#fff">Neuer Deal</div>
+  </div>
+  <div class="hint" style="padding:16px 4px 6px">SORTIEREN NACH</div>
+  <div onClick="{{ setSortScore }}" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:13px 14px;cursor:pointer"><span style="font:600 13px 'Hanken Grotesk';color:#23211d">Score</span><sc-if value="{{ sortScore }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="2.2"><path d="M3 8l3.5 3.5L13 4"></path></svg></sc-if></div>
+  <div onClick="{{ setSortPrice }}" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:13px 14px;margin-top:8px;cursor:pointer"><span style="font:600 13px 'Hanken Grotesk';color:#23211d">Kaufpreis</span><sc-if value="{{ sortPrice }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="2.2"><path d="M3 8l3.5 3.5L13 4"></path></svg></sc-if></div>
+  <div onClick="{{ setSortDate }}" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e7e4df;border-radius:12px;padding:13px 14px;margin-top:8px;cursor:pointer"><span style="font:600 13px 'Hanken Grotesk';color:#23211d">Datum</span><sc-if value="{{ sortDate }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="2.2"><path d="M3 8l3.5 3.5L13 4"></path></svg></sc-if></div>
+</div>
+</sc-if>
+
+<!-- ========================= ANSPRECHPARTNER-SHEET ========================= -->
+<sc-if value="{{ contactSheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeContact }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);padding:8px 16px 28px">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 14px"></div>
+  <div style="display:flex;align-items:center;gap:12px;padding:0 4px 14px">
+    <div style="width:44px;height:44px;border-radius:50%;background:#dfe6e8;display:flex;align-items:center;justify-content:center;flex:none;font:600 15px 'Hanken Grotesk';color:#4a7a86">{{ contactInitials }}</div>
+    <div style="flex:1"><div style="font:700 16px 'Bricolage Grotesque';color:#23211d">{{ contactName }}</div><div style="font:400 10.5px 'IBM Plex Mono';color:#6b6862;margin-top:2px">{{ contactRole }}</div></div>
+  </div>
+  <div onClick="{{ contactCall }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;cursor:pointer">
+    <svg width="18" height="18" fill="none" stroke="#2e6f52" stroke-width="1.7" style="flex:none"><path d="M3 3.5c0 7 4 11 11 11l0-3-3-1.2-1.7 1.4C7.6 11 6.5 9.4 5.7 7.3L7 5.7 6 2.5z"></path></svg>
+    <div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Anrufen</div>
+  </div>
+  <div onClick="{{ contactMail }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:8px;cursor:pointer">
+    <svg width="18" height="18" fill="none" stroke="#2f5760" stroke-width="1.7" style="flex:none"><rect x="2" y="4" width="14" height="10" rx="1.5"></rect><path d="M2.5 5l6.5 4.5L15.5 5"></path></svg>
+    <div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">E-Mail schreiben</div>
+  </div>
+  <div onClick="{{ addContactPhoto }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:8px;cursor:pointer">
+    <svg width="18" height="18" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><rect x="2" y="5" width="14" height="10" rx="2"></rect><circle cx="9" cy="10" r="2.6"></circle><path d="M6 5l1.2-2h3.6L12 5"></path></svg>
+    <div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Foto hinzufügen</div>
+  </div>
+  <div onClick="{{ contactEdit }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:8px;cursor:pointer">
+    <svg width="18" height="18" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><path d="M11 3l3 3-8.5 8.5L2 15l.5-3.5z"></path></svg>
+    <div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Anpassen</div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= BERECHNUNGEN-SHEET ========================= -->
+<sc-if value="{{ calcInfoOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeCalcInfo }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);max-height:92%;display:flex;flex-direction:column">
+  <div style="padding:8px 20px 4px;flex:none"><div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 12px;flex:none"><span style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Wie sich das berechnet</span><span onClick="{{ closeCalcInfo }}" style="font:600 14px 'Hanken Grotesk';color:#2f5760;cursor:pointer">Fertig</span></div>
+  <div style="padding:2px 18px 26px;overflow:auto">
+    <div class="hint" style="color:#8a867f">CASHFLOW / MONAT</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:4px 14px;margin-top:7px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Kaltmiete</span><span style="font:600 12.5px 'IBM Plex Mono';color:#23211d">{{ bkMiete }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#6b6862">− Bankrate (Zins + Tilgung)</span><span style="font:600 12.5px 'IBM Plex Mono';color:#6b6862">{{ bkBank }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#6b6862">− Nicht umlegbare Kosten</span><span style="font:600 12.5px 'IBM Plex Mono';color:#6b6862">{{ bkNk }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 12px;margin:4px -12px 4px;background:#f0eee9;border-radius:9px"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">= Cashflow</span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ bkCf }}</span></div>
+    </div>
+
+    <div class="hint" style="color:#8a867f;margin-top:18px">VERMÖGENSZUWACHS / MONAT</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:4px 14px;margin-top:7px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Cashflow</span><span style="font:600 12.5px 'IBM Plex Mono';color:#23211d">{{ bkCf }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#2f5760">+ Tilgung (Entschuldung)</span><span style="font:600 12.5px 'IBM Plex Mono';color:#2f5760">{{ bkTilg }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#2f5760">+ Wertzuwachs Immobilie</span><span style="font:600 12.5px 'IBM Plex Mono';color:#2f5760">{{ bkWert }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#2f5760">+ Steuervorteil ({{ steuersatzStr }})</span><span style="font:600 12.5px 'IBM Plex Mono';color:#2f5760">{{ bkSteuerM }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 12px;margin:4px -12px 4px;background:#e6eef0;border-radius:9px"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">= Vermögenszuwachs</span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ bkVerm }}</span></div>
+    </div>
+
+    <div class="hint" style="color:#8a867f;margin-top:18px">CASHFLOW NACH STEUERN</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:4px 14px;margin-top:7px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Cashflow (vor Steuern)</span><span style="font:600 12.5px 'IBM Plex Mono';color:#23211d">{{ bkCf }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #f0ede8"><span style="font:500 12.5px 'Hanken Grotesk';color:#6b6862">± Steuer ({{ steuersatzStr }})</span><span style="font:600 12.5px 'IBM Plex Mono';color:#6b6862">{{ bkSteuerM }}</span></div>
+      <div style="font:400 10px/1.5 'IBM Plex Mono';color:#9a968f;padding:2px 0 8px">Steuerbasis = Miete − Zinsanteil − nicht uml. Kosten − AfA ({{ bkAfaJahr }}/Jahr). Verluste senken deine Steuer.</div>
+      <div style="display:flex;justify-content:space-between;padding:11px 12px;margin:0 -12px 4px;background:#f0eee9;border-radius:9px"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">= Cashflow n. Steuern</span><span style="font:600 13px 'IBM Plex Mono';color:#23211d">{{ bkCfSteuer }}</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= STATUS-SHEET ========================= -->
+<sc-if value="{{ statusSheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeStatus }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);padding:8px 16px 28px">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 14px"></div>
+  <div style="font:700 17px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em;padding:0 4px 12px">Status ändern</div>
+  <sc-for list="{{ statusOptions }}" as="o" hint-placeholder-count="5">
+  <div onClick="{{ o.onPick }}" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-bottom:8px;cursor:pointer">
+    <span style="width:9px;height:9px;border-radius:50%;background:{{ o.col }};flex:none"></span>
+    <span style="flex:1;font:600 13.5px 'Hanken Grotesk';color:#23211d">{{ o.label }}</span>
+    <sc-if value="{{ o.active }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="2.2"><path d="M3 8l3.5 3.5L13 4"></path></svg></sc-if>
+  </div>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ========================= CHAT-VERLAUF-SHEET ========================= -->
+<sc-if value="{{ chatListOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeChatList }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);max-height:80%;display:flex;flex-direction:column">
+  <div style="padding:8px 20px 4px;flex:none"><div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 12px;flex:none"><span style="font:700 17px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Chats · {{ chatCount }}</span><div onClick="{{ newChat }}" style="display:flex;align-items:center;gap:6px;background:#1c1b19;border-radius:10px;padding:8px 12px;cursor:pointer"><svg width="12" height="12" fill="#fff"><rect x="5" y="1.5" width="2" height="9" rx="1"></rect><rect x="1.5" y="5" width="9" height="2" rx="1"></rect></svg><span style="font:600 11.5px 'Hanken Grotesk';color:#fff">Neuer Chat</span></div></div>
+  <div style="padding:0 16px 24px;overflow:auto">
+    <sc-for list="{{ chatThreads }}" as="c" hint-placeholder-count="2">
+    <div onClick="{{ c.onOpen }}" style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid {{ c.borderCol }};border-radius:13px;padding:12px 14px;margin-bottom:8px;cursor:pointer">
+      <svg width="17" height="17" fill="none" stroke="#4a7a86" stroke-width="1.6" style="flex:none"><path d="M2 3h13v9H6l-3 3z"></path></svg>
+      <div style="flex:1;min-width:0"><div style="font:600 13px 'Hanken Grotesk';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.title }}</div><sc-if value="{{ c.hasLinked }}" hint-placeholder-val="{{ false }}"><div style="font:500 9.5px 'IBM Plex Mono';color:#2f5760;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.linked }}</div></sc-if></div>
+      <span style="font:400 9.5px 'IBM Plex Mono';color:#9a968f;flex:none">{{ c.count }}</span>
+    </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= ZUSAMMENARBEITEN-SHEET ========================= -->
+<sc-if value="{{ collabSheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeCollab }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);max-height:94%;display:flex;flex-direction:column">
+  <div style="padding:8px 20px 4px;flex:none"><div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 12px;flex:none"><div><div style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Zusammenarbeiten</div><div style="font:400 11px 'Hanken Grotesk';color:#6b6862;margin-top:2px">Lindenstraße 14 · gemeinsam bearbeiten</div></div><span onClick="{{ closeCollab }}" style="font:600 14px 'Hanken Grotesk';color:#2f5760;cursor:pointer">Fertig</span></div>
+  <div style="padding:4px 20px 26px;overflow:auto">
+    <div class="hint" style="color:#8a867f">PERSON EINLADEN</div>
+    <input value="{{ collabInput }}" onInput="{{ onCollabInput }}" placeholder="E-Mail-Adresse" style="width:100%;background:#fff;border:1px solid #e7e4df;border-radius:11px;padding:12px 13px;font:400 13.5px 'Hanken Grotesk';color:#23211d;outline:none;margin-top:7px">
+    <div style="display:flex;gap:8px;margin-top:9px">
+      <div onClick="{{ setCollabEdit }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:10px;cursor:pointer;background:#fff;border:1.5px solid {{ collabEditBorder }}"><span style="font:600 12px 'Hanken Grotesk';color:{{ collabEditCol }}">Bearbeiten</span></div>
+      <div onClick="{{ setCollabView }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:10px;cursor:pointer;background:#fff;border:1.5px solid {{ collabViewBorder }}"><span style="font:600 12px 'Hanken Grotesk';color:{{ collabViewCol }}">Nur ansehen</span></div>
+    </div>
+    <div onClick="{{ sendInvite }}" style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;background:#1c1b19;border-radius:12px;font:600 13.5px 'Hanken Grotesk';color:#fff;cursor:pointer">Einladen</div>
+    <div onClick="{{ copyCollabLink }}" style="margin-top:9px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#fff;border:1px solid #e7e4df;border-radius:12px;font:600 12.5px 'Hanken Grotesk';color:#2f5760;cursor:pointer"><svg width="15" height="15" fill="none" stroke="#2f5760" stroke-width="1.7"><path d="M6 9a3 3 0 004 0l2-2a3 3 0 00-4-4l-1 1"></path><path d="M9 6a3 3 0 00-4 0L3 8a3 3 0 004 4l1-1"></path></svg>Einladungslink kopieren</div>
+
+    <div class="hint" style="color:#8a867f;margin-top:20px">MIT ZUGRIFF · {{ collabCount }}</div>
+    <div style="background:#fff;border:1px solid #e7e4df;border-radius:14px;padding:2px 14px;margin-top:8px">
+      <sc-for list="{{ collabList }}" as="c" hint-placeholder-count="2">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #f0ede8">
+        <div style="width:36px;height:36px;border-radius:50%;background:#dfe6e8;display:flex;align-items:center;justify-content:center;flex:none;font:600 12px 'Hanken Grotesk';color:#4a7a86">{{ c.initials }}</div>
+        <div style="flex:1;min-width:0"><div style="font:600 13px 'Hanken Grotesk';color:#23211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.email }}</div></div>
+        <span style="font:600 10px 'IBM Plex Mono';color:{{ c.roleCol }};flex:none">{{ c.roleLabel }}</span>
+        <sc-if value="{{ c.onRemove }}" hint-placeholder-val="{{ true }}"><div onClick="{{ c.onRemove }}" style="cursor:pointer;flex:none"><svg width="14" height="14" fill="none" stroke="#c2bfb8" stroke-width="1.8"><path d="M3 3l8 8M11 3l-8 8"></path></svg></div></sc-if>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= KONTEXTMENÜ-SHEET ========================= -->
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeMenu }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);padding:8px 16px 28px">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 14px"></div>
+  <div style="font:600 15px 'Hanken Grotesk';color:#23211d;padding:0 4px 10px">{{ deal.street }}</div>
+  <div onClick="{{ menuStatus }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;cursor:pointer">
+    <svg width="19" height="19" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><path d="M3 10l3 3 5-7"></path><circle cx="10" cy="10" r="8"></circle></svg>
+    <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Status ändern</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px">aktuell: {{ statusLabel }}</div></div>
+    <svg width="14" height="14" fill="none" stroke="#c2bfb8" stroke-width="2" style="flex:none"><path d="M5 2l5 5-5 5"></path></svg>
+  </div>
+  <div onClick="{{ menuEdit }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:9px;cursor:pointer">
+    <svg width="19" height="19" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><path d="M12 3l3 3-8.5 8.5L3 15l.5-3.5z"></path></svg>
+    <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Stammdaten bearbeiten</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px">Name, Angebotspreis, Größe, Adresse …</div></div>
+  </div>
+  <div onClick="{{ menuCollab }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:9px;cursor:pointer">
+    <svg width="19" height="19" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><circle cx="7" cy="6" r="2.6"></circle><circle cx="13.5" cy="7.5" r="2.1"></circle><path d="M2.5 15.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4M12 11.5c2 0 4 1.2 4 3.5"></path></svg>
+    <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Zusammenarbeiten</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px">Deal gemeinsam bearbeiten</div></div>
+  </div>
+  <div onClick="{{ menuShare }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:14px;margin-top:9px;cursor:pointer">
+    <svg width="19" height="19" fill="none" stroke="#3a3833" stroke-width="1.7" style="flex:none"><circle cx="5" cy="9.5" r="2.2"></circle><circle cx="14" cy="4.5" r="2.2"></circle><circle cx="14" cy="14.5" r="2.2"></circle><path d="M7 8.5l5-3M7 10.5l5 3"></path></svg>
+    <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Deal teilen</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px">Digitales Exposé für Bank &amp; andere</div></div>
+  </div>
+  <div onClick="{{ menuDelete }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #f0dcd6;border-radius:13px;padding:14px;margin-top:9px;cursor:pointer">
+    <svg width="19" height="19" fill="none" stroke="#c1442d" stroke-width="1.7" style="flex:none"><path d="M3.5 5h12M7 5V3.5h5V5M5 5l.8 10.5h8.4L15 5"></path></svg>
+    <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#c1442d">Löschen</div></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========================= OBJEKTDATEN-SHEET ========================= -->
+<sc-if value="{{ editOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeEdit }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;padding:8px 20px 28px;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);max-height:94%;overflow:auto">
+  <div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto 16px"></div>
+  <div style="font:700 19px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Objektdaten</div>
+  <div style="font:400 12px 'Hanken Grotesk';color:#6b6862;margin-bottom:16px">Manuell eingeben oder korrigieren – fließt in Kopf &amp; Kalkulation.</div>
+
+  <div class="hint" style="color:#8a867f">ART</div>
+  <div style="display:flex;background:#eceae6;border-radius:11px;padding:3px;gap:3px;margin-top:6px">
+    <div onClick="{{ eSetETW }}" style="{{ eArtETW }}">ETW</div>
+    <div onClick="{{ eSetMFH }}" style="{{ eArtMFH }}">MFH</div>
+    <div onClick="{{ eSetDHH }}" style="{{ eArtDHH }}">DHH</div>
+  </div>
+
+  <div class="hint" style="color:#8a867f;margin-top:14px">STRASSE</div>
+  <input value="{{ editDraft.street }}" onChange="{{ onEStreet }}" class="tinp" style="margin-top:6px;font-family:'Hanken Grotesk'">
+  <div class="hint" style="color:#8a867f;margin-top:14px">ORT</div>
+  <input value="{{ editDraft.ort }}" onChange="{{ onEOrt }}" class="tinp" style="margin-top:6px;font-family:'Hanken Grotesk'">
+
+  <div style="display:flex;gap:12px;margin-top:14px">
+    <div style="flex:1"><div class="hint" style="color:#8a867f">WOHNFLÄCHE m²</div><input type="number" value="{{ editDraft.qm }}" onChange="{{ onEQm }}" class="tinp" style="margin-top:6px"></div>
+    <div style="flex:1"><div class="hint" style="color:#8a867f">BAUJAHR</div><input type="number" value="{{ editDraft.baujahr }}" onChange="{{ onEBaujahr }}" class="tinp" style="margin-top:6px"></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:14px">
+    <div style="flex:1"><div class="hint" style="color:#8a867f">KAUFPREIS €</div><input type="number" value="{{ editDraft.preis }}" onChange="{{ onEPreis }}" class="tinp" style="margin-top:6px"></div>
+    <div style="flex:1"><div class="hint" style="color:#8a867f">KALTMIETE €/MO</div><input type="number" value="{{ editDraft.rent }}" onChange="{{ onERent }}" class="tinp" style="margin-top:6px"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px"><span class="hint" style="color:#8a867f">MAKLER-PROVISION %</span><span onClick="{{ toggleProvi }}" style="{{ proviChip }}">provisionsfrei</span></div>
+  <input type="number" step="0.01" value="{{ eMaklerPct }}" onChange="{{ onEMakler }}" class="tinp" style="margin-top:6px">
+
+  <div onClick="{{ saveEdit }}" style="margin-top:22px;display:flex;align-items:center;justify-content:center;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Speichern</div>
+</div>
+</sc-if>
+
+<!-- ========================= RISIKO-WIZARD ========================= -->
+<sc-if value="{{ riskWizardOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeWizard }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3)">
+  <div style="padding:8px 18px 4px"><div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto"></div></div>
+  <sc-if value="{{ wizChoose }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:8px 18px 4px"><div style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Wie gehst du damit um?</div><div style="font:400 11.5px 'Hanken Grotesk';color:#6b6862;margin-top:3px">{{ rk.title }}</div></div>
+  <div style="padding:14px 18px 26px">
+    <div onClick="{{ wizCover }}" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:13px 14px;cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:#f6e7e3;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" fill="none" stroke="#c1442d" stroke-width="2"><path d="M8 2v12M2 8h12"></path></svg></div>
+      <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">In Kosten übernehmen</div><div style="font:400 11px 'IBM Plex Mono';color:#8a867f;margin-top:1px">{{ rEstStr }} fließen in die Kalkulation</div></div>
+    </div>
+    <div onClick="{{ wizAccept }}" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:13px 14px;margin-top:9px;cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:#e6f1ea;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" fill="none" stroke="#2e6f52" stroke-width="2.2"><path d="M3 8l3.5 3.5L13 4"></path></svg></div>
+      <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Akzeptieren, Kosten entfallen</div><div style="font:400 11px 'IBM Plex Mono';color:#8a867f;margin-top:1px">bewusst hingenommen · 0 €</div></div>
+    </div>
+    <div onClick="{{ wizContext }}" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e7e4df;border-radius:13px;padding:13px 14px;margin-top:9px;cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:#e6eef0;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" fill="none" stroke="#2f5760" stroke-width="1.9"><path d="M2 3h12v8H8l-3 3v-3H2z"></path></svg></div>
+      <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#23211d">Kontext geben <span style="font:500 9px 'IBM Plex Mono';color:#2f5760;background:#e6eef0;border-radius:5px;padding:2px 6px;margin-left:3px">KI</span></div><div style="font:400 11px 'IBM Plex Mono';color:#8a867f;margin-top:1px">Gutachten, Absprachen, eigener Betrag …</div></div>
+    </div>
+    <div onClick="{{ wizQuestion }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;margin-top:9px;cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:#eceae6;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" fill="none" stroke="#6b6862" stroke-width="1.9"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 5v3l2 2"></path></svg></div>
+      <div style="flex:1"><div style="font:600 13.5px 'Hanken Grotesk';color:#3a3833">Fragen an Verkäufer</div><div style="font:400 11px 'IBM Plex Mono';color:#8a867f;margin-top:1px">bleibt offen · KI-Fragenkatalog</div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ wizCtx }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 18px 10px">
+    <div onClick="{{ wizBack }}" style="cursor:pointer"><svg width="18" height="18" fill="none" stroke="#23211d" stroke-width="2"><path d="M11 3l-6 6 6 6"></path></svg></div>
+    <div style="flex:1"><div style="font:700 16px 'Bricolage Grotesque';color:#23211d">Kontext geben</div><div style="font:400 10.5px 'IBM Plex Mono';color:#8a867f;margin-top:1px">{{ rk.title }}</div></div>
+  </div>
+  <div style="padding:4px 18px 0;max-height:300px;overflow:auto">
+    <sc-for list="{{ ctxRows }}" as="m" hint-placeholder-count="1">
+    <div style="{{ m.row }}">
+      <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ true }}"><div style="width:24px;height:24px;border-radius:7px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 8px 'IBM Plex Mono';color:#fff">KI</span></div></sc-if>
+      <div style="{{ m.bubble }}">{{ m.text }}</div>
+    </div>
+    </sc-for>
+    <sc-if value="{{ ctxWorking }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><div style="width:24px;height:24px;border-radius:7px;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 8px 'IBM Plex Mono';color:#fff">KI</span></div><div style="background:#fff;border:1px solid #e7e4df;border-radius:4px 13px 13px 13px;padding:9px 13px;font:600 13px 'IBM Plex Mono';color:#b6b2ab;letter-spacing:2px">arbeitet…</div></div></sc-if>
+    <sc-if value="{{ hasProposal }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#e6eef0;border:1px solid #cddce0;border-radius:13px;padding:13px 14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:600 12.5px 'Hanken Grotesk';color:#23211d">Vorschlag: {{ proposalLabel }}</span><span style="font:600 13px 'IBM Plex Mono';color:#2f5760">{{ proposalEffect }}</span></div>
+      <div onClick="{{ applyProposal }}" style="margin-top:11px;display:flex;align-items:center;justify-content:center;padding:12px;background:#4a7a86;border-radius:11px;font:600 13px 'Hanken Grotesk';color:#fff;cursor:pointer">Risiko so anpassen</div>
+    </div>
+    </sc-if>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 18px 24px">
+    <input value="{{ ctxInput }}" onInput="{{ onCtxInput }}" onKeyDown="{{ onCtxKey }}" placeholder="Info hinzufügen …" style="flex:1;background:#eceae6;border:none;border-radius:22px;padding:12px 16px;font:400 13.5px 'Hanken Grotesk';color:#23211d;outline:none">
+    <div onClick="{{ sendCtx }}" style="width:42px;height:42px;border-radius:50%;background:#1c1b19;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="19" height="19" fill="none" stroke="#fff" stroke-width="2"><path d="M9.5 15V4M5 8.5l4.5-4.5 4.5 4.5"></path></svg></div>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ========================= ANNAHMEN-SHEET ========================= -->
+<sc-if value="{{ calcSheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeCalcSheet }}" style="position:absolute;inset:0;background:rgba(20,19,17,.4);z-index:60;animation:fin .2s ease-out"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#f7f5f2;border-radius:24px 24px 0 0;z-index:61;animation:sheetin .28s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);max-height:94%;display:flex;flex-direction:column">
+  <div style="padding:8px 20px 4px;flex:none"><div style="width:38px;height:5px;border-radius:3px;background:#d4d0c9;margin:0 auto"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 12px;flex:none"><span style="font:700 18px 'Bricolage Grotesque';color:#23211d;letter-spacing:-.01em">Annahmen · {{ scenarioLabel }}</span><span onClick="{{ closeCalcSheet }}" style="font:600 14px 'Hanken Grotesk';color:#2f5760;cursor:pointer">Fertig</span></div>
+  <div style="background:#1c1b19;margin:0 16px;border-radius:12px;padding:11px 15px;display:flex;align-items:center;justify-content:space-between;flex:none"><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.06em;color:#8f8b83">VERMÖGENSZUWACHS / MO</span><span style="font:600 17px 'IBM Plex Mono';color:#fff">{{ vermoegenStr }}</span></div>
+  <div style="padding:16px 20px 26px;overflow:auto">
+    <div class="hint" style="color:#8a867f">KAUFPREIS</div>
+    <div style="display:flex;align-items:center;gap:9px;margin-top:7px">
+      <div onClick="{{ onPriceDec }}" style="width:38px;height:38px;border-radius:11px;background:#fff;border:1px solid #e7e4df;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" fill="#23211d"><rect x="3" y="7" width="10" height="2" rx="1"></rect></svg></div>
+      <div style="flex:1;text-align:center;border:1.5px solid #23211d;border-radius:11px;padding:9px 6px"><span style="font:600 21px 'IBM Plex Mono';color:#23211d">{{ kaufpreisNum }}</span><span style="font:500 11px 'IBM Plex Mono';color:#8a867f"> €</span></div>
+      <div onClick="{{ onPriceInc }}" style="width:38px;height:38px;border-radius:11px;background:#fff;border:1px solid #e7e4df;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" fill="#23211d"><rect x="7" y="3" width="2" height="10" rx="1"></rect><rect x="3" y="7" width="10" height="2" rx="1"></rect></svg></div>
+    </div>
+    <input type="range" min="{{ priceMin }}" max="{{ angebotNum }}" step="1000" value="{{ priceVal }}" onChange="{{ onPriceSlider }}" style="background: {{ priceGrad }}">
+    <div style="display:flex;justify-content:space-between;font:400 10.5px 'IBM Plex Mono';color:#6b6862;margin-top:8px"><span>Rabatt {{ rabattStr }}</span><span>Angebot {{ angebotStr }}</span></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:16px;border-top:1px solid #e7e4df"><span style="font:500 13px 'Hanken Grotesk';color:#3a3833">Sollzins</span><span style="font:600 14px 'IBM Plex Mono';color:#23211d">{{ zinsStr }}</span></div>
+    <input type="range" min="2" max="6" step="0.1" value="{{ zins }}" onChange="{{ onZins }}" style="background: {{ zinsGrad }}">
+
+    <div onClick="{{ financeAppt }}" style="display:flex;align-items:center;gap:11px;background:#e6eef0;border-radius:13px;padding:12px 14px;margin-top:14px;cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:#4a7a86;display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" fill="none" stroke="#fff" stroke-width="1.7"><rect x="2.5" y="3.5" width="12" height="11" rx="2"></rect><path d="M2.5 7h12M6 2v3M11 2v3"></path></svg></div>
+      <div style="flex:1"><div style="font:600 12.5px 'Hanken Grotesk';color:#23211d">Noch keine Finanzierung oder zweiter Blick gewünscht?</div><div style="font:400 10.5px 'IBM Plex Mono';color:#2f5760;margin-top:2px">Jetzt Termin vereinbaren</div></div>
+      <svg width="14" height="14" fill="none" stroke="#2f5760" stroke-width="2" style="flex:none"><path d="M5 2l5 5-5 5"></path></svg>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:16px;border-top:1px solid #e7e4df"><span style="font:500 13px 'Hanken Grotesk';color:#3a3833">Anf. Tilgung <span style="font:400 10.5px 'IBM Plex Mono';color:#8a867f">→ Vermögen {{ tilgMonthlyStr }}/Mo</span></span><span style="font:600 14px 'IBM Plex Mono';color:#23211d">{{ tilgStr }}</span></div>
+    <input type="range" min="1" max="4" step="0.1" value="{{ tilg }}" onChange="{{ onTilg }}" style="background: {{ tilgGrad }}">
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:16px;border-top:1px solid #e7e4df"><span style="font:500 13px 'Hanken Grotesk';color:#3a3833">Eigenkapital <span style="font:400 10px 'IBM Plex Mono';color:#8a867f">0 – GIK</span></span><input type="number" value="{{ ek }}" onChange="{{ onEk }}" style="width:120px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:7px 10px;outline:none;background:#fff"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px"><span class="hint" style="color:#8a867f">NICHT UMLEGBARE KOSTEN · €/MO</span><span style="font:600 11px 'IBM Plex Mono';color:#3a3833">Σ {{ nkSumStr }}</span></div>
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Hausgeld <span style="font:500 10.5px 'IBM Plex Mono';color:#9a968f">nicht umlegbar</span></span><input type="number" value="{{ costHausgeld }}" onChange="{{ onCostHausgeld }}" style="width:88px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:6px 9px;outline:none;background:#fff"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Instandhaltungsrücklage</span><input type="number" value="{{ costRuecklage }}" onChange="{{ onCostRuecklage }}" style="width:88px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:6px 9px;outline:none;background:#fff"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Verwaltung</span><input type="number" value="{{ costVerwaltung }}" onChange="{{ onCostVerwaltung }}" style="width:88px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:6px 9px;outline:none;background:#fff"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:14px;border-top:1px solid #ece9e4"><span style="font:500 13px 'Hanken Grotesk';color:#3a3833">Kostensteigerung p. a.</span><span style="font:600 14px 'IBM Plex Mono';color:#23211d">{{ costGrowthStr }}</span></div>
+      <input type="range" min="0" max="5" step="0.1" value="{{ costGrowth }}" onChange="{{ onCostGrowth }}" style="background: {{ costGrad }}">
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:22px"><span class="hint" style="color:#8a867f">WERTZUWACHS IMMOBILIE P. A.</span><span style="font:600 14px 'IBM Plex Mono';color:#23211d">{{ wertZuwachsStr }}</span></div>
+    <input type="range" min="0" max="5" step="0.1" value="{{ wertZuwachs }}" onChange="{{ onWertZuwachs }}" style="background: {{ wertZuwachsGrad }}">
+    <div style="font:400 10px 'IBM Plex Mono';color:#9a968f;margin-top:8px">Fließt in den Vermögensaufbau ein.</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px"><span class="hint" style="color:#8a867f">ABSCHREIBUNG (AfA)</span><span style="font:600 11px 'IBM Plex Mono';color:#2f5760">{{ afaJahrStr }} / Jahr</span></div>
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Gebäudewert <span style="font:500 10px 'IBM Plex Mono';color:#9a968f">ohne Grund</span></span><input type="number" value="{{ gebaeudewert }}" onChange="{{ onGebaeudewert }}" style="width:118px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:7px 10px;outline:none;background:#fff"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">AfA-Satz <span style="font:500 10px 'IBM Plex Mono';color:#9a968f">2 % ab 1925 · 3 % ab 2023</span></span><input type="number" step="0.5" value="{{ afaSatz }}" onChange="{{ onAfaSatz }}" style="width:78px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:7px 10px;outline:none;background:#fff"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;margin-top:8px;background:#e6f1ea;border-radius:10px"><span style="font:500 12.5px 'Hanken Grotesk';color:#2e6f52">Jährliche AfA</span><span style="font:600 14px 'IBM Plex Mono';color:#2e6f52">{{ afaJahrStr }}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #ece9e4;margin-top:4px"><span style="font:500 12.5px 'Hanken Grotesk';color:#3a3833">Grenzsteuersatz <span style="font:500 10px 'IBM Plex Mono';color:#9a968f">Privat od. Firma</span></span><div style="display:flex;align-items:center;gap:4px"><input type="number" step="1" value="{{ steuersatz }}" onChange="{{ onSteuersatz }}" style="width:64px;text-align:right;font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:7px 10px;outline:none;background:#fff"><span style="font:600 12px 'IBM Plex Mono';color:#8a867f">%</span></div></div>
+      <div style="display:flex;gap:6px;padding:2px 0 4px"><sc-for list="{{ taxPresets }}" as="p" hint-placeholder-count="4"><span onClick="{{ p.onPick }}" style="{{ p.chip }}">{{ p.label }}</span></sc-for></div>
+      <div style="display:flex;gap:7px;margin-top:9px;background:#f0eee9;border-radius:10px;padding:9px 11px"><span style="width:6px;height:6px;border-radius:50%;background:#8a867f;margin-top:4px;flex:none"></span><span style="font:400 10.5px/1.5 'IBM Plex Mono';color:#6b6862">Nur das Gebäude ist abschreibbar (nicht der Grund). Mindert dein zu versteuerndes Einkommen aus Vermietung.</span></div>
+    </div>
+
+    <div onClick="{{ closeCalcSheet }}" style="margin-top:22px;display:flex;align-items:center;justify-content:center;padding:15px;background:#1c1b19;border-radius:14px;font:600 14px 'Hanken Grotesk';color:#fff;cursor:pointer">Fertig</div>
+  </div>
+</div>
+</sc-if>
+
+</div></div></div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'pipeline', tab: 'overview', scenario: 'base',
+    zins: 3.8, ek: 90000, steig: 2.3, wertZuwachs: 2.0, gebaeudewert: 132000, afaSatz: 2.0, steuersatz: 42, calcInfoOpen: false,
+    risks: [
+      { id: 'dach', tone: 'r', title: 'Marodes Dach – Sanierung vertagt', desc: 'Die Eigentümerversammlung hat die notwendige Dachsanierung erneut vertagt. Eine Sonderumlage ist in den nächsten 2–3 Jahren sehr wahrscheinlich; dein Anteil richtet sich nach den Miteigentumsanteilen (MEA 82/1000).', quote: '„TOP 7 – Antrag Dachsanierung: Die Versammlung beschließt mehrheitlich, die Sanierung auf die nächste ordentliche ETV zu vertagen. Angebot liegt bei ca. 118.000 € (Gesamt-WEG)."', source: 'ETV-Protokoll 2025 · Seite 3 · TOP 7', gesamt: 118000, estimate: 2600, big: true, status: 'open', appliedCost: 0, context: '', surveyor: null },
+      { id: 'verzug', tone: 'r', title: '2 Eigentümer in Zahlungsverzug', desc: 'Zwei Einheiten sind mit dem Hausgeld im Rückstand. Das erhöht das Risiko einer Nachschusspflicht der übrigen Eigentümer.', quote: '„TOP 4 – Der Verwalter berichtet über Hausgeldrückstände zweier Einheiten in Höhe von insgesamt ~9.600 €."', source: 'ETV-Protokoll 2025 · Seite 4 · TOP 4', gesamt: 9600, estimate: 800, big: false, status: 'open', appliedCost: 0, context: '', surveyor: null },
+      { id: 'fassade', tone: 'a', title: 'Sonderumlage Fassade angekündigt', desc: 'Der Wirtschaftsplan nennt eine geplante Rücklagen-Entnahme bzw. Sonderumlage für die Fassade.', quote: '„Für die anstehende Fassadeninstandsetzung ist eine Sonderumlage vorgesehen."', source: 'Wirtschaftsplan 2025 · Seite 2', gesamt: 54000, estimate: 1200, big: true, status: 'open', appliedCost: 0, context: '', surveyor: null },
+      { id: 'ruecklage', tone: 'a', title: 'Instandhaltungsrücklage knapp', desc: 'Die Instandhaltungsrücklage von 42.000 € ist im Verhältnis zum Objekt eher niedrig.', quote: '„Stand Instandhaltungsrücklage zum 31.12.: 42.000 €."', source: 'Wirtschaftsplan 2025 · Seite 1', gesamt: 0, estimate: 0, big: false, status: 'open', appliedCost: 0, context: '', surveyor: null },
+      { id: 'energie', tone: 'a', title: 'Kein aktueller Energieausweis', desc: 'Es liegt kein gültiger Energieausweis vor – gesetzlich für den Verkauf erforderlich.', quote: '', source: 'Unterlage fehlt', gesamt: 0, estimate: 0, big: false, status: 'open', appliedCost: 0, context: '', surveyor: null },
+      { id: 'garten', tone: 'a', title: 'Sondernutzung Garten unklar', desc: 'Die Zuordnung des Gartens als Sondernutzungsrecht geht aus den Unterlagen nicht eindeutig hervor.', quote: '', source: 'Teilungserklärung · unklar', gesamt: 0, estimate: 0, big: false, status: 'open', appliedCost: 0, context: '', surveyor: null },
+    ],
+    activeRiskId: 'dach', riskWizardOpen: false,
+    wizStep: 'choose', ctxMsgs: [], ctxInput: '', ctxWorking: false, ctxProposal: null,
+    rentMode: 'year', yearsExpanded: false, query: '',
+    deal: { art: 'ETW', street: 'Lindenstraße 14', ort: 'Leipzig', qm: 68, baujahr: 1998, status: 'vermietet', preis: 189000, rent: 800, maklerPct: 0.0357 },
+    costs: { hausgeld: 115, ruecklage: 60, verwaltung: 30 }, costGrowth: 2.0,
+    priceByCase: { base: 189000, bull: 189000, bear: 189000 }, tilg: 2.0, calcSheetOpen: false,
+    editOpen: false, editDraft: {}, menuOpen: false,
+    dealStatus: 'pruefung', statusSheetOpen: false,
+    pipeMenuOpen: false, sortBy: 'score',
+    contact: { name: 'Martina Krause', role: 'Maklerin · Stadthaus Immobilien', hasPhoto: false }, contactSheetOpen: false,
+    measures: [{ id: 1, title: 'Bad-Sanierung', year: 3, invest: 6000, uplift: 200 }],
+    sheetOpen: false, draft: { title: '', invest: 5000, uplift: 150, year: 2 },
+    chats: [
+      { id: 2, title: 'Dach-Risiko klären', linked: 'Risiko · Marodes Dach', msgs: [
+        { role: 'user', text: 'Wie sicher ist das Dach-Risiko?', source: '' },
+        { role: 'ai', text: 'Belegt: die ETV hat die Dachsanierung ausdrücklich vertagt. Meine Kostenschätzung von 2.600 € ist dein MEA-Anteil bei ~220 €/m².', source: 'ETV-Protokoll 2025 · S.3' },
+      ] },
+      { id: 1, title: 'Allgemein', linked: null, msgs: [
+        { role: 'ai', text: 'Ich kenne alle Dokumente und die Base-Kalkulation dieses Deals. Frag mich, was du wissen willst.', source: '' },
+      ] },
+    ],
+    activeChatId: 1, chatListOpen: false,
+    chatInput: '', typing: false,
+    toast: null, requested: {}, docsExpanded: false, photosAdded: 0,
+    docFlowOpen: false, docStep: 'add', docContext: '', docResultReady: false,
+    docViewerOpen: false, activeDoc: null,
+    createOpen: false, cForm: { art: 'ETW', street: '', plz: '', ort: '', preis: '', qm: '', rent: '', vermietet: true },
+    collabSheetOpen: false, collabInput: '', collabRole: 'edit',
+    collaborators: [
+      { id: 1, name: 'Niklas (du)', email: 'niklas@tano.care', role: 'owner', pending: false },
+      { id: 2, name: 'Lena Weber', email: 'lena.weber@gmail.com', role: 'edit', pending: false },
+    ],
+  };
+
+  fmt(n) { return Math.round(n).toLocaleString('de-DE'); }
+  euro(n) { return this.fmt(n) + ' €'; }
+  signed(n) { const r = Math.round(n); return (r >= 0 ? '+' : '−') + this.fmt(Math.abs(r)) + ' €'; }
+  pct(n) { return n.toFixed(1).replace('.', ',') + ' %'; }
+
+  toast(msg) {
+    if (this._tt) clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  calc() {
+    const scen = this.state.scenario;
+    const P = this.state.priceByCase[scen];
+    const tilg = this.state.tilg, rentBase0 = this.state.deal.rent;
+    const cc = this.state.costs;
+    const nkMonthly = (cc.hausgeld || 0) + (cc.ruecklage || 0) + (cc.verwaltung || 0);
+    const grunderwerb = P * 0.055, notar = P * 0.016, makler = P * this.state.deal.maklerPct;
+    const NK = grunderwerb + notar + makler;
+    const factor = scen === 'bull' ? 1.08 : scen === 'bear' ? 0.92 : 1.0;
+    const rent = rentBase0 * factor;
+    const riskCost = this.state.risks.reduce((sum, r) => sum + (r.status === 'covered' ? (r.appliedCost || 0) : 0), 0);
+    const gik = P + NK + riskCost;
+    const ek = Math.min(this.state.ek, gik);
+    const loan = Math.max(0, gik - ek);
+    const zinsMonthly = loan * (this.state.zins / 100) / 12;
+    const tilgMonthly = loan * (tilg / 100) / 12;
+    const annuity = zinsMonthly + tilgMonthly;
+    const cf = rent - annuity - nkMonthly;
+    const wertzuwachs = P * (this.state.wertZuwachs / 100) / 12;
+    const afaJahr = (this.state.gebaeudewert || 0) * (this.state.afaSatz / 100);
+    const taxableAnnual = rent * 12 - nkMonthly * 12 - zinsMonthly * 12 - afaJahr;
+    const taxAnnual = taxableAnnual * (this.state.steuersatz / 100);
+    const steuerMonat = -taxAnnual / 12;
+    const cfAfterTax = cf + steuerMonat;
+    const vermoegen = cf + tilgMonthly + wertzuwachs + steuerMonat;
+    const brutto = (rent * 12) / P * 100;
+    const faktor = P / (rent * 12);
+    const netto = ((rent * 12) - nkMonthly * 12) / gik * 100;
+    const ekRend = ek > 0 ? ((cf * 12) + tilgMonthly * 12 + P * 0.02) / ek * 100 : 0;
+    return { rent, cf, vermoegen, tilgMonthly, zinsMonthly, faktor, netto, ekRend, grunderwerb, notar, makler, riskCost, annuity, nkMonthly, P, gik, loan, bankrate: annuity, brutto, wertzuwachs, afaJahr, taxableAnnual, taxAnnual, cfAfterTax };
+  }
+
+  buildRows(rent) {
+    const g = 1 + this.state.steig / 100;
+    const rows = [];
+    for (let y = 1; y <= 10; y++) {
+      let r = rent * Math.pow(g, y - 1);
+      let up = 0, meas = null;
+      this.state.measures.forEach(m => { if (m.year <= y) up += m.uplift; if (m.year === y) meas = m; });
+      r += up;
+      rows.push({ year: y, rentNum: r, adjusted: !!meas, hasMeasure: !!meas, meas });
+    }
+    return rows;
+  }
+
+  reply(text) {
+    const t = text.toLowerCase();
+    if (t.includes('4,5') || t.includes('4.5') || t.includes('zins')) return { text: 'Bei 4,5 % Sollzins fällt der Cashflow von +49 € auf rund −72 €/Monat. Der Deal wäre dann leicht negativ; über die EK-Rendite (ca. 5,4 %) aber noch tragbar.', source: 'Kalkulation · Base' };
+    if (t.includes('dach') || t.includes('risiko')) return { text: 'Belegt: die ETV hat die Dachsanierung ausdrücklich vertagt. Meine Kostenschätzung von 2.600 € ist dein MEA-Anteil bei ~220 €/m².', source: 'ETV-Protokoll 2025 · S.3' };
+    if (t.includes('protokoll') || t.includes('zusammen')) return { text: 'Kern der Protokolle 2023–2025: Rücklage mit 42.000 € eher knapp, Dachsanierung vertagt (Risiko), Fassaden-Sonderumlage angekündigt. Sonst keine strittigen Beschlüsse.', source: 'ETV-Protokoll 2025' };
+    if (t.includes('verkäufer') || t.includes('fragen')) return { text: 'Vorschlag an den Verkäufer: 1) Aktuelle Beschluss-Sammlung vollständig? 2) Terminplan Dachsanierung? 3) Höhe letzter Sonderumlagen? 4) Aktueller Stand Instandhaltungsrücklage?', source: '' };
+    return { text: 'Ich prüfe das anhand der Dokumente und der Kalkulation dieses Deals. Kannst du die Frage etwas konkreter stellen?', source: 'Kalkulation · Base' };
+  }
+
+  updateActiveChat(fn) {
+    this.setState({ chats: this.state.chats.map(c => c.id === this.state.activeChatId ? fn(c) : c) });
+  }
+  send(text) {
+    if (!text || !text.trim()) return;
+    const t = text.trim();
+    this.updateActiveChat(c => ({ ...c, title: c.title === 'Neuer Chat' ? (t.length > 26 ? t.slice(0, 26) + '…' : t) : c.title, msgs: c.msgs.concat([{ role: 'user', text: t, source: '' }]) }));
+    this.setState({ chatInput: '', typing: true });
+    if (this._ct) clearTimeout(this._ct);
+    this._ct = setTimeout(() => {
+      const r = this.reply(t);
+      this.updateActiveChat(c => ({ ...c, msgs: c.msgs.concat([{ role: 'ai', text: r.text, source: r.source }]) }));
+      this.setState({ typing: false });
+    }, 750);
+  }
+  newChat() {
+    const id = Date.now();
+    this.setState({ chats: [{ id, title: 'Neuer Chat', linked: null, msgs: [{ role: 'ai', text: 'Neuer Chat zu diesem Deal. Was möchtest du wissen?', source: '' }] }].concat(this.state.chats), activeChatId: id, chatListOpen: false });
+  }
+
+  patchRisk(patch) {
+    this.setState({ risks: this.state.risks.map(r => r.id === this.state.activeRiskId ? { ...r, ...patch } : r) });
+  }
+  sendCtx() {
+    const text = (this.state.ctxInput || '').trim();
+    if (!text) return;
+    const msgs = this.state.ctxMsgs.concat([{ role: 'user', text }]);
+    this.setState({ ctxMsgs: msgs, ctxInput: '', ctxWorking: true, ctxProposal: null });
+    if (this._xt) clearTimeout(this._xt);
+    this._xt = setTimeout(() => {
+      const userTurns = this.state.ctxMsgs.filter(m => m.role === 'user').length;
+      const t = text.toLowerCase();
+      const positive = /übernimmt|übernommen|verkäufer|gutachten|nichts kaputt|trocken|saniert|erledigt|kein mangel|niedriger|behoben/.test(t);
+      let reply, proposal = null;
+      if (userTurns < 2 && !positive) {
+        reply = 'Verstanden. Liegt dir das schriftlich vor (Gutachten, E-Mail, Protokoll) – oder ist es eine mündliche Auskunft?';
+      } else if (positive) {
+        reply = 'Danke, das ändert die Einschätzung. Ich schlage vor, die Kosten entfallen zu lassen.';
+        proposal = { label: 'Kosten entfallen', status: 'accepted', cost: 0, note: text };
+      } else {
+        reply = 'Alles klar. Ich passe die angesetzten Kosten auf deine Angabe an.';
+        const r = this.state.risks.find(x => x.id === this.state.activeRiskId);
+        proposal = { label: 'Kosten reduziert', status: 'covered', cost: Math.round((r.estimate || 0) / 2), note: text };
+      }
+      this.setState({ ctxMsgs: this.state.ctxMsgs.concat([{ role: 'ai', text: reply }]), ctxWorking: false, ctxProposal: proposal });
+    }, 900);
+  }
+  applyProposal() {
+    const p = this.state.ctxProposal;
+    if (!p) return;
+    this.patchRisk({ status: p.status, appliedCost: p.cost, context: p.note });
+    this.setState({ riskWizardOpen: false, wizStep: 'choose', ctxMsgs: [], ctxInput: '', ctxProposal: null });
+    this.toast(p.status === 'accepted' ? 'Kontext übernommen · Kosten entfallen' : 'Kontext übernommen · −' + this.fmt(p.cost) + ' €');
+  }
+  setRiskStatus(status) {
+    const r = this.state.risks.find(x => x.id === this.state.activeRiskId);
+    const patch = { status };
+    if (status === 'covered') patch.appliedCost = r.estimate;
+    if (status === 'accepted') patch.appliedCost = 0;
+    if (status === 'open') { patch.appliedCost = 0; }
+    this.patchRisk(patch);
+    const msg = { covered: 'In Kosten übernommen · −' + this.fmt(r.estimate) + ' €', accepted: 'Akzeptiert · Kosten entfallen', question: 'Fragenkatalog für Verkäufer erstellt', open: 'Risiko neu eröffnet' }[status];
+    this.setState({ riskWizardOpen: false });
+    this.toast(msg);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const c = this.calc();
+    const cfColor = c.cf >= 0 ? '#2e9e5b' : '#c1442d';
+    const RISKS = s.risks;
+    const totalCovered = RISKS.reduce((sum, r) => sum + (r.status === 'covered' ? (r.appliedCost || 0) : 0), 0);
+    const resolvedN = RISKS.filter(r => r.status !== 'open').length;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const scoreVal = clamp(Math.round(74 + resolvedN * 2 - totalCovered / 1500), 40, 95);
+    const dokuVal = clamp(41 + resolvedN * 8, 0, 95);
+    const dokuCol = dokuVal >= 60 ? '#2e9e5b' : dokuVal >= 48 ? '#c2882a' : '#c1442d';
+    const maxPreis = Math.round((180600 - totalCovered) / 100) * 100;
+    const scoreCol = scoreVal >= 70 ? '#2e9e5b' : scoreVal >= 50 ? '#c2882a' : '#c1442d';
+    const scoreBg = scoreVal >= 70 ? '#e6f1ea' : scoreVal >= 50 ? '#f6efdf' : '#f6e7e3';
+    const askPrice = s.deal.preis;
+    const negPrice = c.P;
+    const priceMin = Math.round(askPrice * 0.8 / 1000) * 1000;
+    const discountVal = Math.max(0, askPrice - negPrice);
+    const pctOff = askPrice > 0 ? (discountVal / askPrice * 100) : 0;
+    const priceOk = negPrice <= maxPreis;
+
+    // Risiko-Lebenszyklus
+    const toneCol = { r: '#c1442d', a: '#c2882a' };
+    const openRisks = RISKS.filter(r => r.status === 'open');
+    const doneRisks = RISKS.filter(r => r.status !== 'open');
+    const kuerzel = { open_r: ['KRIT', '#c1442d'], open_a: ['HINW', '#c2882a'], covered: ['ÜBERN', '#c1442d'], accepted: ['AKZ.', '#2e6f52'], question: ['FRAGE', '#8a867f'] };
+    const openTo = (id) => () => this.setState({ screen: 'risk', activeRiskId: id });
+    const openRow = (r) => { const k = kuerzel['open_' + r.tone]; return { title: r.title, tag: k[0], tagCol: k[1], amount: r.estimate > 0 ? '~' + this.fmt(r.estimate) : (r.tone === 'r' ? '?' : 'prüfen'), amountCol: '#9a968f', onTap: openTo(r.id) }; };
+    const doneRow = (r) => { const k = kuerzel[r.status]; return { title: r.title, tag: k[0], tagCol: k[1], amount: r.status === 'covered' ? '−' + this.fmt(r.appliedCost) + ' €' : r.status === 'accepted' ? '0 €' : 'offen b. Verk.', amountCol: r.status === 'covered' ? '#c1442d' : r.status === 'accepted' ? '#2e6f52' : '#9a968f', onTap: openTo(r.id) }; };
+    const openRows = openRisks.map(openRow);
+    const doneRows = doneRisks.map(doneRow);
+
+    const active = RISKS.find(r => r.id === s.activeRiskId) || RISKS[0];
+    const aBig = active.big && active.status === 'open';
+    const statusMeta = {
+      open: ['OFFEN · SCHWEBEND', '#6b6862', '#eceae6', '#c1442d'],
+      covered: ['IN KOSTEN ÜBERNOMMEN', '#c1442d', '#f6e7e3', '#c1442d'],
+      accepted: ['AKZEPTIERT · KOSTEN ENTFALLEN', '#2e6f52', '#e6f1ea', '#2e6f52'],
+      question: ['FRAGE AN VERKÄUFER OFFEN', '#6b6862', '#eceae6', '#8a867f'],
+    }[active.status];
+    const aEffectStr = active.status === 'covered' ? '−' + this.fmt(active.appliedCost) + ' €' : active.status === 'accepted' ? '0 €' : active.status === 'question' ? 'offen' : '~' + this.fmt(active.estimate) + ' €';
+    const aEffectCol = active.status === 'covered' ? '#c1442d' : active.status === 'accepted' ? '#2e6f52' : '#8a867f';
+    const mk = (o) => ({ ...o, color: o.tone === 'g' ? '#2e9e5b' : o.tone === 'a' ? '#c2882a' : '#c1442d', softBg: o.tone === 'g' ? '#e6f1ea' : o.tone === 'a' ? '#f6efdf' : '#f6e7e3', hasRisk: o.risks > 0, riskLabel: o.risks + (o.risks === 1 ? ' Risiko' : ' Risiken') });
+    const q = s.query.trim().toLowerCase();
+    const matchQ = (d) => !q || (d.street + ' ' + d.type + ' ' + d.sub).toLowerCase().includes(q);
+    const pruefung = [mk({ score: 78, tone: 'g', type: 'ETW', street: 'Lindenstraße 14', sub: 'Leipzig · 68 m² · 1998 · vermietet', price: '189.000 €', yield: '4,2 %', risks: 2, shared: s.collaborators.filter(c => c.role !== 'owner').slice(0, 2).map(c => c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()) }), mk({ score: 61, tone: 'a', type: 'MFH', street: 'Gartenweg 3', sub: 'Halle · 240 m² · 1965 · teilverm.', price: '420.000 €', yield: '5,1 %', risks: 3 })].filter(matchQ);
+    const neu = [mk({ score: 45, tone: 'r', type: 'ETW', street: 'Kaiserallee 22', sub: 'Leipzig · 54 m² · 2012 · frei', price: '245.000 €', yield: '3,1 %', risks: 1 })].filter(matchQ);
+    const verhandlung = [mk({ score: 84, tone: 'g', type: 'ETW', street: 'Südplatz 7', sub: 'Leipzig · 82 m² · 2005 · vermietet', price: '312.000 €', yield: '4,6 %', risks: 0 })].filter(matchQ);
+
+    const rows = this.buildRows(c.rent);
+    const min = Math.min(...rows.map(r => r.rentNum)), max = Math.max(...rows.map(r => r.rentNum));
+    const bars = rows.map(r => {
+      const h = 24 + (max === min ? 20 : (r.rentNum - min) / (max - min) * 40);
+      let cumUp = 0; this.state.measures.forEach(m => { if (m.year <= r.year) cumUp += m.uplift; });
+      const color = r.hasMeasure ? '#4a7a86' : (cumUp > 0 ? '#8fb0a3' : '#cfd8d3');
+      return { h: Math.round(h) + 'px', color };
+    });
+    const _ann = c.annuity, _nk = c.nkMonthly, _cg = 1 + s.costGrowth / 100, _rm = Math.round(c.riskCost / 120);
+    const _cfY = (r) => r.rentNum - _ann - _nk * Math.pow(_cg, r.year - 1) - _rm;
+    const visRows = (s.yearsExpanded ? rows : rows.slice(0, 4)).map(r => ({
+      year: r.year, adjusted: r.adjusted, hasMeasure: r.hasMeasure,
+      rentStr: this.euro(r.rentNum),
+      cfStr: this.signed(_cfY(r)), cfCol: _cfY(r) >= 0 ? '#2e9e5b' : '#c1442d',
+      pillStyle: r.adjusted
+        ? "font:600 13px 'IBM Plex Mono';color:#23211d;border:1.5px solid #23211d;border-radius:8px;padding:5px 10px"
+        : "font:600 13px 'IBM Plex Mono';color:#23211d;border:1px solid #e7e4df;border-radius:8px;padding:5px 10px",
+      measure: r.meas ? { title: r.meas.title, upStr: '+' + this.fmt(r.meas.uplift) + ' €/Mo', investStr: '−' + this.euro(r.meas.invest) } : {},
+    }));
+
+    const seg = (active) => active
+      ? "flex:1;text-align:center;padding:9px 0;border-radius:9px;background:#fff;font:600 12.5px 'Hanken Grotesk';color:#23211d;box-shadow:0 1px 2px rgba(0,0,0,.07);cursor:pointer"
+      : "flex:1;text-align:center;padding:9px 0;font:600 12.5px 'Hanken Grotesk';color:#8a867f;cursor:pointer";
+    const seg2 = (active) => active
+      ? "font:600 10.5px 'Hanken Grotesk';color:#23211d;padding:5px 9px;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.07);cursor:pointer"
+      : "font:600 10.5px 'Hanken Grotesk';color:#8a867f;padding:5px 9px;border-radius:7px;cursor:pointer";
+    const tab = (active) => active
+      ? "flex:1;text-align:center;padding:11px 0;font:600 12.5px 'Hanken Grotesk';color:#23211d;border-bottom:2px solid #23211d;cursor:pointer"
+      : "flex:1;text-align:center;padding:11px 0;font:600 12.5px 'Hanken Grotesk';color:#9a968f;border-bottom:2px solid transparent;cursor:pointer";
+
+    const grad = (v, min, max, col) => { const p = (v - min) / (max - min) * 100; return `linear-gradient(90deg, ${col} 0 ${p}%, #e6e3de ${p}% 100%)`; };
+
+    const reqDoc = (name) => () => { this.setState({ requested: { ...this.state.requested, [name]: true } }); this.toast('KI-Mail an Verwalter erstellt · ' + name); };
+    const missing = [
+      { name: 'Beschluss-Sammlung', onReq: reqDoc('Beschluss-Sammlung') },
+      { name: 'Grundbuchauszug', onReq: reqDoc('Grundbuchauszug') },
+      { name: 'Energieausweis', onReq: reqDoc('Energieausweis') },
+    ].filter(m => !s.requested[m.name]);
+
+    const dot = { g: '#2e9e5b', a: '#c2882a', r: '#c1442d' };
+    const badge = { g: ['OK', '#2e6f52', '#e6f1ea'], a: ['Hinweis', '#c2882a', '#f6efdf'], r: ['Risiko', '#c1442d', '#f6e7e3'] };
+    const docFlagged = [
+      { name: 'ETV-Protokoll 2025', note: '3 Beschlüsse · 1 Risiko-Fund', tone: 'r', pages: 6, summary: 'Protokoll der ordentlichen Eigentümerversammlung 2025. Drei Beschlüsse gefasst; die Dachsanierung wurde erneut vertagt (Risiko-Fund).', quote: '„TOP 7 – Antrag Dachsanierung: Die Versammlung beschließt mehrheitlich, die Sanierung auf die nächste ordentliche ETV zu vertagen. Angebot ~118.000 € (Gesamt-WEG)."', src: 'Seite 3 · TOP 7' },
+      { name: 'Wirtschaftsplan 2025', note: 'Rücklage 42.000 € · knapp', tone: 'a', pages: 4, summary: 'Wirtschaftsplan mit Einnahmen/Ausgaben der WEG. Instandhaltungsrücklage mit 42.000 € eher knapp; Sonderumlage Fassade angekündigt.', quote: '„Stand Instandhaltungsrücklage zum 31.12.: 42.000 €. Für die Fassade ist eine Sonderumlage vorgesehen."', src: 'Seite 1–2' },
+    ];
+    const photoDocs = s.photosAdded > 0 ? [{ name: 'Fotos Objekt (' + s.photosAdded + ')', note: 'KI: Feuchtefleck Kellerwand erkannt', tone: 'a' }] : [];
+    const docOk = [
+      { name: 'Exposé', note: 'Objektdaten übernommen', tone: 'g', pages: 8, summary: 'Verkaufsexposé mit Objektdaten. Alle Kennzahlen wurden übernommen; keine Auffälligkeiten.', quote: '', src: '' },
+      { name: 'Teilungserklärung', note: 'MEA 82/1000', tone: 'g', pages: 12, summary: 'Teilungserklärung inkl. Aufteilungsplan. Dein Miteigentumsanteil beträgt 82/1000.', quote: '', src: '' },
+      { name: 'Grundbuchauszug', note: 'keine Auffälligkeiten', tone: 'g', pages: 3, summary: 'Aktueller Grundbuchauszug. Keine Belastungen in Abt. II/III auffällig.', quote: '', src: '' },
+      { name: 'Nebenkostenabrechnung', note: 'plausibel', tone: 'g', pages: 2, summary: 'Betriebskostenabrechnung des Vorjahres. Werte plausibel.', quote: '', src: '' },
+      { name: 'Flurkarte', note: 'Grenzen ok', tone: 'g', pages: 1, summary: 'Amtliche Flurkarte. Grundstücksgrenzen ohne Auffälligkeiten.', quote: '', src: '' },
+    ];
+    const openDoc = (d) => () => this.setState({ docViewerOpen: true, activeDoc: d });
+    const toRow = (d) => ({ ...d, dotCol: dot[d.tone], bText: badge[d.tone][0], bCol: badge[d.tone][1], bBg: badge[d.tone][2], onOpen: openDoc(d) });
+    const flagged = docFlagged.concat(photoDocs).map(toRow);
+    const okRows = docOk.map(toRow);
+    const addPhotos = () => { this.setState({ photosAdded: this.state.photosAdded + 3 }); this.toast('3 Fotos analysiert · 1 neuer Hinweis'); };
+    const startAnalyze = () => {
+      this.setState({ docStep: 'analyzing' });
+      if (this._dt) clearTimeout(this._dt);
+      this._dt = setTimeout(() => this.setState({ docStep: 'question' }), 2100);
+    };
+
+    const activeChat = s.chats.find(c => c.id === s.activeChatId) || s.chats[0];
+    const chat = activeChat.msgs.map(m => {
+      const ai = m.role === 'ai';
+      return {
+        isAi: ai, text: m.text, hasSource: !!m.source, source: m.source,
+        rowStyle: ai ? 'display:flex;align-items:flex-start' : 'display:flex;justify-content:flex-end',
+        bubbleStyle: ai
+          ? "background:#fff;border:1px solid #e7e4df;border-radius:4px 14px 14px 14px;padding:12px 13px;font:400 13.5px/1.55 'Hanken Grotesk';color:#23211d"
+          : "background:#1c1b19;border-radius:14px 14px 4px 14px;padding:12px 13px;font:400 13.5px/1.5 'Hanken Grotesk';color:#f4f2ef",
+      };
+    });
+
+    const ddDone = 7 - (s.requested ? 0 : 0);
+    return {
+      isPipeline: s.screen === 'pipeline', isDetail: s.screen === 'detail', isRisk: s.screen === 'risk',
+      isOverview: s.tab === 'overview', isCalc: s.tab === 'calc', isDocs: s.tab === 'docs', isChat: s.tab === 'chat',
+      showHome: s.screen === 'detail' && s.tab !== 'chat',
+      pruefung, neu, verhandlung, notSearching: !q, nPruef: pruefung.length, nNeu: neu.length, nVerh: verhandlung.length, query: s.query,
+      dealTitle: s.deal.art + ' · ' + s.deal.street,
+      dealSub: s.deal.ort + ' · ' + s.deal.qm + ' m² · ' + this.euro(s.deal.preis),
+      deal: s.deal, dealMetaShort: s.deal.art + ' · ' + s.deal.ort + ' · ' + s.deal.qm + ' m²', dealPriceStr: this.euro(s.deal.preis),
+      menuOpen: s.menuOpen,
+      openMenu: () => this.setState({ menuOpen: true }),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      pipeMenuOpen: s.pipeMenuOpen,
+      openPipeMenu: () => this.setState({ pipeMenuOpen: true }),
+      closePipeMenu: () => this.setState({ pipeMenuOpen: false }),
+      sortBy: s.sortBy, sortScore: s.sortBy === 'score', sortPrice: s.sortBy === 'price', sortDate: s.sortBy === 'date',
+      setSortScore: () => { this.setState({ pipeMenuOpen: false, sortBy: 'score' }); this.toast('Sortiert nach Score'); },
+      setSortPrice: () => { this.setState({ pipeMenuOpen: false, sortBy: 'price' }); this.toast('Sortiert nach Preis'); },
+      setSortDate: () => { this.setState({ pipeMenuOpen: false, sortBy: 'date' }); this.toast('Sortiert nach Datum'); },
+      contactName: s.contact.name, contactRole: s.contact.role, contactHasPhoto: s.contact.hasPhoto,
+      contactInitials: s.contact.name.split(' ').map(w => w[0]).join('').slice(0, 2),
+      contactSheetOpen: s.contactSheetOpen,
+      openContact: () => this.setState({ contactSheetOpen: true }),
+      closeContact: () => this.setState({ contactSheetOpen: false }),
+      contactCall: () => { this.setState({ contactSheetOpen: false }); this.toast('Anruf an ' + this.state.contact.name); },
+      contactMail: () => { this.setState({ contactSheetOpen: false }); this.toast('E-Mail an ' + this.state.contact.name); },
+      contactEdit: () => { this.setState({ contactSheetOpen: false }); this.toast('Ansprechpartner anpassen – Demo'); },
+      addContactPhoto: () => { this.setState({ contact: { ...this.state.contact, hasPhoto: true } }); this.toast('Foto hinzugefügt'); },
+      financeAppt: () => { this.setState({ calcSheetOpen: false }); this.toast('Finanzierungstermin anfragen – wir vermitteln'); },
+      menuEdit: () => this.setState({ menuOpen: false, editOpen: true, editDraft: { ...this.state.deal } }),
+      statusLabel: ({ neu: 'Neu', pruefung: 'In Prüfung', verhandlung: 'Verhandlung', gekauft: 'Gekauft', verworfen: 'Verworfen' })[s.dealStatus],
+      statusSheetOpen: s.statusSheetOpen,
+      statusOptions: [
+        { key: 'neu', label: 'Neu', col: '#6b6862' },
+        { key: 'pruefung', label: 'In Prüfung', col: '#4a7a86' },
+        { key: 'verhandlung', label: 'Verhandlung', col: '#c2882a' },
+        { key: 'gekauft', label: 'Gekauft', col: '#2e6f52' },
+        { key: 'verworfen', label: 'Verworfen', col: '#c1442d' },
+      ].map(o => ({ ...o, active: o.key === s.dealStatus, onPick: () => { this.setState({ dealStatus: o.key, statusSheetOpen: false }); this.toast('Status: ' + o.label); } })),
+      menuStatus: () => this.setState({ menuOpen: false, statusSheetOpen: true }),
+      closeStatus: () => this.setState({ statusSheetOpen: false }),
+      menuCollab: () => this.setState({ menuOpen: false, collabSheetOpen: true }),
+      collabSheetOpen: s.collabSheetOpen, collabInput: s.collabInput,
+      collabRoleEdit: s.collabRole === 'edit', collabRoleView: s.collabRole === 'view',
+      collabEditBorder: s.collabRole === 'edit' ? '#23211d' : '#e7e4df', collabViewBorder: s.collabRole === 'view' ? '#23211d' : '#e7e4df',
+      collabEditCol: s.collabRole === 'edit' ? '#23211d' : '#8a867f', collabViewCol: s.collabRole === 'view' ? '#23211d' : '#8a867f',
+      collabList: s.collaborators.map(c => ({
+        name: c.name, email: c.email,
+        initials: c.name.replace(/\(.*\)/, '').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+        isOwner: c.role === 'owner', roleLabel: c.pending ? 'Eingeladen' : c.role === 'owner' ? 'Eigentümer' : c.role === 'edit' ? 'Bearbeiten' : 'Ansehen',
+        roleCol: c.pending ? '#c2882a' : '#6b6862', pending: c.pending,
+        onRemove: c.role === 'owner' ? null : () => this.setState({ collaborators: this.state.collaborators.filter(x => x.id !== c.id) }),
+      })),
+      collabCount: s.collaborators.length,
+      sharedPeople: s.collaborators.filter(c => c.role !== 'owner'),
+      sharedCount: s.collaborators.filter(c => c.role !== 'owner').length,
+      isShared: s.collaborators.filter(c => c.role !== 'owner').length > 0,
+      shareAvatars: s.collaborators.slice(0, 3).map((c, i) => ({ initials: c.name.replace(/\(.*\)/, '').trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(), z: 3 - i, ml: i === 0 ? '0' : '-8px' })),
+      shareLabel: (() => { const p = s.collaborators.filter(c => c.role !== 'owner'); if (!p.length) return 'Nur du'; const first = p[0].name.split(' ')[0]; return p.length === 1 ? 'Geteilt mit ' + first : 'Geteilt mit ' + first + ' +' + (p.length - 1); })(),
+      openCollab: () => this.setState({ menuOpen: false, collabSheetOpen: true }),
+      closeCollab: () => this.setState({ collabSheetOpen: false }),
+      onCollabInput: (e) => this.setState({ collabInput: e.target.value }),
+      setCollabEdit: () => this.setState({ collabRole: 'edit' }),
+      setCollabView: () => this.setState({ collabRole: 'view' }),
+      sendInvite: () => {
+        const email = (this.state.collabInput || '').trim();
+        if (!email) { this.toast('E-Mail eingeben'); return; }
+        const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+        this.setState({ collaborators: this.state.collaborators.concat([{ id: Date.now(), name, email, role: this.state.collabRole, pending: true }]), collabInput: '' });
+        this.toast('Einladung an ' + email + ' gesendet');
+      },
+      copyCollabLink: () => this.toast('Einladungslink kopiert'),
+      menuShare: () => { this.setState({ menuOpen: false }); this.toast('Deal teilen · digitales Exposé – Demo'); },
+      menuDelete: () => { this.setState({ menuOpen: false }); this.toast('Deal löschen – Demo'); },
+      grunderwStr: this.euro(c.grunderwerb), notarStr: this.euro(c.notar), maklerStr: this.euro(c.makler),
+      maklerLabel: s.deal.maklerPct > 0 ? (s.deal.maklerPct * 100).toFixed(2).replace('.', ',') + ' %' : 'provisionsfrei',
+      costHausgeld: s.costs.hausgeld, costRuecklage: s.costs.ruecklage, costVerwaltung: s.costs.verwaltung,
+      nkSumStr: this.euro(c.nkMonthly), costGrowth: s.costGrowth, costGrowthStr: this.pct(s.costGrowth), costGrad: grad(s.costGrowth, 0, 5, '#23211d'),
+      dachApplied: totalCovered > 0, dachAmountStr: '−' + this.fmt(totalCovered) + ' €',
+      riskRowVal: totalCovered > 0 ? '−' + this.fmt(totalCovered) + ' €' : 'keine', riskRowCol: totalCovered > 0 ? '#c1442d' : '#9a968f',
+      rBoxBorder: active.status === 'open' ? 'dashed #d8d5cf' : 'solid #e7e4df',
+      rEstLabel: active.status === 'open' ? 'KI-Schätzung · dein Anteil' : 'Wirkung auf Kalkulation',
+      scoreVal, scoreCol, scoreBg, dokuVal, dokuPct: dokuVal + '%', dokuCol, maxPreisStr: this.euro(maxPreis),
+      openRows, doneRows, openCount: openRisks.length, doneCount: doneRisks.length, hasOpen: openRisks.length > 0, hasDone: doneRisks.length > 0,
+      coveredSumStr: this.euro(totalCovered),
+      rk: active, riskIsOpen: active.status === 'open', riskIsDone: active.status !== 'open', riskBig: aBig,
+      rStatusText: statusMeta[0], rStatusCol: statusMeta[1], rStatusBg: statusMeta[2], rStatusDot: statusMeta[3],
+      rHasQuote: !!active.quote, rEstStr: '~' + this.fmt(active.estimate) + ' €', rGesamtStr: this.euro(active.gesamt),
+      rEffectStr: aEffectStr, rEffectCol: aEffectCol, rHasContext: !!active.context, rHasSurveyor: !!active.surveyor,
+      rSurveyorName: active.surveyor ? active.surveyor.name : '', rSurveyorMeta: active.surveyor ? active.surveyor.meta : '',
+      rSurveyorFinding: active.surveyor ? active.surveyor.finding : '', rContextText: active.context,
+      riskWizardOpen: s.riskWizardOpen,
+      wizChoose: s.wizStep === 'choose', wizCtx: s.wizStep === 'context',
+      ctxWorking: s.ctxWorking, ctxInput: s.ctxInput, hasProposal: !!s.ctxProposal,
+      proposalLabel: s.ctxProposal ? s.ctxProposal.label : '',
+      proposalEffect: s.ctxProposal ? (s.ctxProposal.cost === 0 ? '0 €' : '−' + this.fmt(s.ctxProposal.cost) + ' €') : '',
+      ctxRows: s.ctxMsgs.map(m => ({ isAi: m.role === 'ai', text: m.text,
+        row: m.role === 'ai' ? 'display:flex;align-items:flex-start;gap:9px;margin-bottom:11px' : 'display:flex;justify-content:flex-end;margin-bottom:11px',
+        bubble: m.role === 'ai' ? "background:#fff;border:1px solid #e7e4df;border-radius:4px 13px 13px 13px;padding:10px 12px;font:400 13px/1.5 'Hanken Grotesk';color:#23211d;max-width:82%" : "background:#1c1b19;border-radius:13px 13px 4px 13px;padding:10px 12px;font:400 13px/1.5 'Hanken Grotesk';color:#f4f2ef;max-width:82%" })),
+      openWizard: () => this.setState({ riskWizardOpen: true, wizStep: 'choose' }),
+      closeWizard: () => this.setState({ riskWizardOpen: false, wizStep: 'choose' }),
+      wizCover: () => this.setRiskStatus('covered'),
+      wizAccept: () => this.setRiskStatus('accepted'),
+      wizQuestion: () => this.setRiskStatus('question'),
+      wizContext: () => this.setState({ wizStep: 'context', ctxMsgs: [{ role: 'ai', text: 'Was weißt du zusätzlich, das nicht in den Dokumenten steht? Ich prüfe es und passe das Risiko an oder frage nach.' }], ctxInput: '', ctxProposal: null }),
+      wizBack: () => this.setState({ wizStep: 'choose' }),
+      onCtxInput: (e) => this.setState({ ctxInput: e.target.value }),
+      onCtxKey: (e) => { if (e.key === 'Enter') this.sendCtx(); },
+      sendCtx: () => this.sendCtx(),
+      applyProposal: () => this.applyProposal(),
+      reopenRisk: () => this.setRiskStatus('open'),
+      addSurveyor: () => { this.patchRisk({ surveyor: { name: 'J. Berger (Sachverst.)', meta: 'Anfrage über DealPilot gesendet', finding: '' } }); this.toast('Bausachverständigen angefragt'); },
+      editOpen: s.editOpen, editDraft: s.editDraft,
+      eArtETW: seg(s.editDraft.art === 'ETW'), eArtMFH: seg(s.editDraft.art === 'MFH'), eArtDHH: seg(s.editDraft.art === 'DHH'),
+      eMaklerPct: s.editDraft.maklerPct != null ? +(s.editDraft.maklerPct * 100).toFixed(2) : 0,
+      proviChip: (s.editDraft.maklerPct === 0) ? "font:600 10.5px 'IBM Plex Mono';color:#fff;background:#4a7a86;border-radius:7px;padding:4px 9px;cursor:pointer" : "font:600 10.5px 'IBM Plex Mono';color:#8a867f;background:#eceae6;border-radius:7px;padding:4px 9px;cursor:pointer",
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      onCostHausgeld: (e) => this.setState({ costs: { ...this.state.costs, hausgeld: parseInt(e.target.value, 10) || 0 } }),
+      onCostRuecklage: (e) => this.setState({ costs: { ...this.state.costs, ruecklage: parseInt(e.target.value, 10) || 0 } }),
+      onCostVerwaltung: (e) => this.setState({ costs: { ...this.state.costs, verwaltung: parseInt(e.target.value, 10) || 0 } }),
+      onCostGrowth: (e) => this.setState({ costGrowth: parseFloat(e.target.value) }),
+      calcSheetOpen: s.calcSheetOpen, openCalcSheet: () => this.setState({ calcSheetOpen: true }), closeCalcSheet: () => this.setState({ calcSheetOpen: false }),
+      angebotStr: this.euro(askPrice), angebotNum: askPrice, kaufpreisStr: this.euro(negPrice), kaufpreisNum: this.fmt(negPrice),
+      priceVal: negPrice, priceMin, priceGrad: grad(negPrice, priceMin, askPrice, '#23211d'),
+      rabattStr: discountVal > 0 ? '−' + this.fmt(discountVal) + ' € (−' + pctOff.toFixed(1).replace('.', ',') + ' %)' : 'kein Rabatt',
+      priceCol: priceOk ? '#2e6f52' : '#c2882a', priceBg: priceOk ? '#e6f1ea' : '#f6efdf', priceHint: priceOk ? 'unter KI-Max-Preis' : 'über KI-Max-Preis',
+      vermoegenStr: this.signed(c.vermoegen), tilgMonthlyStr: '+' + this.fmt(c.tilgMonthly) + ' €',
+      gikStr: this.euro(c.gik), bankrateStr: this.euro(c.bankrate) + '/Mo', ekMax: Math.round(c.gik),
+      bruttoStr: this.pct(c.brutto),
+      wertZuwachs: s.wertZuwachs, wertZuwachsStr: this.pct(s.wertZuwachs), wertZuwachsGrad: grad(s.wertZuwachs, 0, 5, '#4a7a86'),
+      cfAfterTaxStr: this.signed(c.cfAfterTax), cfAfterTaxCol: c.cfAfterTax >= 0 ? '#7fd0a1' : '#e08a7a',
+      steuersatz: s.steuersatz, onSteuersatz: (e) => this.setState({ steuersatz: parseFloat(e.target.value) || 0 }),
+      taxPresets: [
+        { label: 'GmbH ~15,8', v: 15.8 }, { label: '30', v: 30 }, { label: '42', v: 42 }, { label: '45', v: 45 },
+      ].map(p => ({ label: p.label, onPick: () => this.setState({ steuersatz: p.v }),
+        chip: Math.abs(s.steuersatz - p.v) < 0.05
+          ? "font:600 11px 'IBM Plex Mono';color:#fff;background:#4a7a86;border-radius:8px;padding:6px 10px;cursor:pointer"
+          : "font:600 11px 'IBM Plex Mono';color:#6b6862;background:#eceae6;border-radius:8px;padding:6px 10px;cursor:pointer" })),
+      calcInfoOpen: s.calcInfoOpen, openCalcInfo: () => this.setState({ calcInfoOpen: true }), closeCalcInfo: () => this.setState({ calcInfoOpen: false }),
+      bkMiete: this.euro(c.rent), bkBank: '−' + this.euro(c.bankrate), bkNk: '−' + this.euro(c.nkMonthly), bkCf: this.signed(c.cf),
+      bkTilg: '+' + this.euro(c.tilgMonthly), bkWert: '+' + this.euro(c.wertzuwachs), bkVerm: this.signed(c.vermoegen),
+      bkZins: '−' + this.euro(c.zinsMonthly), bkAfaM: '−' + this.euro(c.afaJahr / 12), bkSteuerM: this.signed(-c.taxAnnual / 12), bkCfSteuer: this.signed(c.cfAfterTax),
+      bkAfaJahr: this.euro(c.afaJahr), bkSteuerJahr: this.signed(-c.taxAnnual), steuersatzStr: this.pct(s.steuersatz),
+      gebaeudewert: s.gebaeudewert, afaSatz: s.afaSatz, afaSatzStr: this.pct(s.afaSatz), afaJahrStr: this.euro(c.afaJahr),
+      onWertZuwachs: (e) => this.setState({ wertZuwachs: parseFloat(e.target.value) }),
+      onGebaeudewert: (e) => this.setState({ gebaeudewert: parseInt(e.target.value, 10) || 0 }),
+      onAfaSatz: (e) => this.setState({ afaSatz: parseFloat(e.target.value) || 0 }),
+      tilg: s.tilg, tilgStr: this.pct(s.tilg), tilgGrad: grad(s.tilg, 1, 4, '#4a7a86'), onTilg: (e) => this.setState({ tilg: parseFloat(e.target.value) }),
+      onPriceSlider: (e) => this.setState({ priceByCase: { ...this.state.priceByCase, [this.state.scenario]: parseInt(e.target.value, 10) || 0 } }),
+      onPriceDec: () => { const v = this.state.priceByCase[this.state.scenario]; this.setState({ priceByCase: { ...this.state.priceByCase, [this.state.scenario]: Math.max(0, v - 1000) } }); },
+      onPriceInc: () => { const v = this.state.priceByCase[this.state.scenario]; this.setState({ priceByCase: { ...this.state.priceByCase, [this.state.scenario]: v + 1000 } }); },
+      openEdit: () => this.setState({ editOpen: true, editDraft: { ...this.state.deal } }),
+      closeEdit: () => this.setState({ editOpen: false }),
+      eSetETW: () => this.setState({ editDraft: { ...this.state.editDraft, art: 'ETW' } }),
+      eSetMFH: () => this.setState({ editDraft: { ...this.state.editDraft, art: 'MFH' } }),
+      eSetDHH: () => this.setState({ editDraft: { ...this.state.editDraft, art: 'DHH' } }),
+      onEStreet: (e) => this.setState({ editDraft: { ...this.state.editDraft, street: e.target.value } }),
+      onEOrt: (e) => this.setState({ editDraft: { ...this.state.editDraft, ort: e.target.value } }),
+      onEQm: (e) => this.setState({ editDraft: { ...this.state.editDraft, qm: parseInt(e.target.value, 10) || 0 } }),
+      onEBaujahr: (e) => this.setState({ editDraft: { ...this.state.editDraft, baujahr: parseInt(e.target.value, 10) || 0 } }),
+      onEPreis: (e) => this.setState({ editDraft: { ...this.state.editDraft, preis: parseInt(e.target.value, 10) || 0 } }),
+      onERent: (e) => this.setState({ editDraft: { ...this.state.editDraft, rent: parseInt(e.target.value, 10) || 0 } }),
+      onEMakler: (e) => this.setState({ editDraft: { ...this.state.editDraft, maklerPct: (parseFloat(e.target.value) || 0) / 100 } }),
+      toggleProvi: () => this.setState({ editDraft: { ...this.state.editDraft, maklerPct: this.state.editDraft.maklerPct === 0 ? 0.0357 : 0 } }),
+      saveEdit: () => { this.setState({ deal: { ...this.state.editDraft }, editOpen: false }); this.toast('Objektdaten gespeichert'); },
+
+
+      cfStr: this.signed(c.cf), cfColor,
+      scenarioLabel: s.scenario === 'bull' ? 'Bull' : s.scenario === 'bear' ? 'Bear' : 'Base',
+      ekRendStr: this.pct(c.ekRend), nettoStr: this.pct(c.netto), faktorStr: c.faktor.toFixed(1).replace('.', ',') + '×',
+      zinsStr: this.pct(s.zins), ekStr: this.euro(s.ek), steigStr: this.pct(s.steig), zins: s.zins, ek: s.ek, steig: s.steig,
+      zinsGrad: grad(s.zins, 2, 6, '#23211d'), ekGrad: grad(s.ek, 40000, 130000, '#23211d'), steigGrad: grad(s.steig, 0, 5, '#23211d'),
+      segBase: seg(s.scenario === 'base'), segBull: seg(s.scenario === 'bull'), segBear: seg(s.scenario === 'bear'),
+      segAuto: seg2(s.rentMode === 'auto'), segYear: seg2(s.rentMode === 'year'),
+      autoMode: s.rentMode === 'auto', yearMode: s.rentMode === 'year',
+      tabOv: tab(s.tab === 'overview'), tabCa: tab(s.tab === 'calc'), tabDo: tab(s.tab === 'docs'), tabCh: tab(s.tab === 'chat'),
+      bars, visibleRows: visRows, moreLabel: s.yearsExpanded ? 'Weniger anzeigen ▴' : 'Jahr 5–10 einblenden ▾',
+      ddStr: (7) + ' / 11', ddPct: '64%', ddNote: '4 offen · 2 mit Risiko-Fund',
+      missing, missingCount: missing.length,
+      flaggedDocs: flagged, flaggedCount: flagged.length, okDocs: okRows, okCount: okRows.length,
+      docFlowOpen: s.docFlowOpen, docStepAdd: s.docStep === 'add', docStepAnalyzing: s.docStep === 'analyzing', docStepQuestion: s.docStep === 'question', docStepResult: s.docStep === 'result', docContext: s.docContext,
+      openDocFlow: () => this.setState({ docFlowOpen: true, docStep: 'add', docContext: '' }),
+      closeDocFlow: () => { if (this._dt) clearTimeout(this._dt); this.setState({ docFlowOpen: false }); },
+      onDocContext: (e) => this.setState({ docContext: e.target.value }),
+      startAnalyze,
+      answerQuestion: () => this.setState({ docStep: 'result' }),
+      skipQuestion: () => this.setState({ docStep: 'result' }),
+      reAnalyze: startAnalyze,
+      applyDocFlow: () => { if (this._dt) clearTimeout(this._dt); this.setState({ docFlowOpen: false }); this.toast('3 Dokumente eingeordnet'); },
+      docViewerOpen: s.docViewerOpen, dv: s.activeDoc || {},
+      dvDotCol: s.activeDoc ? dot[s.activeDoc.tone] : '#cfccc6', dvBText: s.activeDoc ? badge[s.activeDoc.tone][0] : '', dvBCol: s.activeDoc ? badge[s.activeDoc.tone][1] : '', dvBBg: s.activeDoc ? badge[s.activeDoc.tone][2] : '',
+      dvHasQuote: !!(s.activeDoc && s.activeDoc.quote), dvPagesStr: s.activeDoc ? s.activeDoc.pages + (s.activeDoc.pages === 1 ? ' Seite' : ' Seiten') : '',
+      closeDocViewer: () => this.setState({ docViewerOpen: false }),
+      docsExpanded: s.docsExpanded, okLabel: s.docsExpanded ? 'Einklappen ▴' : okRows.length + ' unauffällige einblenden ▾',
+      toggleDocs: () => this.setState({ docsExpanded: !this.state.docsExpanded }), addPhotos,
+      chat, typing: s.typing, chatInput: s.chatInput,
+      chatTitle: activeChat.title, chatLinked: activeChat.linked || '', chatHasLinked: !!activeChat.linked,
+      chatListOpen: s.chatListOpen, chatCount: s.chats.length,
+      chatThreads: s.chats.map(c => ({ title: c.title, linked: c.linked || '', hasLinked: !!c.linked, count: c.msgs.length + ' Nachr.', borderCol: c.id === s.activeChatId ? '#23211d' : '#e7e4df', onOpen: () => this.setState({ activeChatId: c.id, chatListOpen: false }) })),
+      openChatList: () => this.setState({ chatListOpen: true }),
+      closeChatList: () => this.setState({ chatListOpen: false }),
+      newChat: () => this.newChat(),
+      draft: s.draft, sheetOpen: s.sheetOpen,
+      hasToast: !!s.toast, toast: s.toast || '',
+
+      open: () => this.setState({ screen: 'detail', tab: 'overview' }),
+      goBack: () => this.setState({ screen: 'pipeline' }),
+      openOverview: () => this.setState({ tab: 'overview' }), openCalc: () => this.setState({ tab: 'calc' }),
+      openDocs: () => this.setState({ tab: 'docs' }), openChat: () => this.setState({ tab: 'chat' }),
+      setBase: () => this.setState({ scenario: 'base' }), setBull: () => this.setState({ scenario: 'bull' }), setBear: () => this.setState({ scenario: 'bear' }),
+      onZins: (e) => this.setState({ zins: parseFloat(e.target.value) }),
+      onEk: (e) => { const P = this.state.priceByCase[this.state.scenario]; const NK = P * 0.055 + P * 0.016 + P * this.state.deal.maklerPct; const rc = this.state.risks.reduce((s, r) => s + (r.status === 'covered' ? (r.appliedCost || 0) : 0), 0); const gik = P + NK + rc; const v = parseInt(e.target.value, 10) || 0; this.setState({ ek: Math.max(0, Math.min(v, Math.round(gik))) }); },
+      onSteig: (e) => this.setState({ steig: parseFloat(e.target.value) }),
+      onAuto: () => this.setState({ rentMode: 'auto' }), onYear: () => this.setState({ rentMode: 'year' }),
+      toggleYears: () => this.setState({ yearsExpanded: !s.yearsExpanded }),
+      openSheet: () => this.setState({ sheetOpen: true, draft: { title: '', invest: 5000, uplift: 150, year: 2 } }),
+      closeSheet: () => this.setState({ sheetOpen: false }),
+      onDraftTitle: (e) => this.setState({ draft: { ...this.state.draft, title: e.target.value } }),
+      onDraftInvest: (e) => this.setState({ draft: { ...this.state.draft, invest: parseInt(e.target.value, 10) || 0 } }),
+      onDraftUplift: (e) => this.setState({ draft: { ...this.state.draft, uplift: parseInt(e.target.value, 10) || 0 } }),
+      draftYearDec: () => this.setState({ draft: { ...this.state.draft, year: Math.max(1, this.state.draft.year - 1) } }),
+      draftYearInc: () => this.setState({ draft: { ...this.state.draft, year: Math.min(10, this.state.draft.year + 1) } }),
+      addMeasure: () => { const d = this.state.draft; this.setState({ measures: this.state.measures.concat([{ id: Date.now(), title: d.title.trim() || 'Maßnahme', year: d.year, invest: d.invest, uplift: d.uplift }]), sheetOpen: false, yearsExpanded: true }); this.toast('Maßnahme übernommen'); },
+      backToDetail: () => this.setState({ screen: 'detail', tab: 'overview' }),
+      reqBeschluss: () => this.toast('KI-Mail an Verwalter erstellt · Beschluss-Sammlung'),
+      toastSoon: () => this.toast('Im Prototyp noch nicht aktiv'),
+      toastPlus: () => this.setState({ pipeMenuOpen: false, createOpen: true }),
+      createOpen: s.createOpen,
+      cf: s.cForm,
+      cArtETW: seg(s.cForm.art === 'ETW'), cArtMFH: seg(s.cForm.art === 'MFH'), cArtHaus: seg(s.cForm.art === 'Haus'),
+      cVermJa: seg(s.cForm.vermietet === true), cVermNein: seg(s.cForm.vermietet === false),
+      closeCreate: () => this.setState({ createOpen: false }),
+      cSetETW: () => this.setState({ cForm: { ...this.state.cForm, art: 'ETW' } }),
+      cSetMFH: () => this.setState({ cForm: { ...this.state.cForm, art: 'MFH' } }),
+      cSetHaus: () => this.setState({ cForm: { ...this.state.cForm, art: 'Haus' } }),
+      cSetVermJa: () => this.setState({ cForm: { ...this.state.cForm, vermietet: true } }),
+      cSetVermNein: () => this.setState({ cForm: { ...this.state.cForm, vermietet: false } }),
+      onCStreet: (e) => this.setState({ cForm: { ...this.state.cForm, street: e.target.value } }),
+      onCPlz: (e) => this.setState({ cForm: { ...this.state.cForm, plz: e.target.value } }),
+      onCOrt: (e) => this.setState({ cForm: { ...this.state.cForm, ort: e.target.value } }),
+      onCPreis: (e) => this.setState({ cForm: { ...this.state.cForm, preis: e.target.value } }),
+      onCQm: (e) => this.setState({ cForm: { ...this.state.cForm, qm: e.target.value } }),
+      onCRent: (e) => this.setState({ cForm: { ...this.state.cForm, rent: e.target.value } }),
+      submitCreate: () => { const f = this.state.cForm; this.setState({ createOpen: false }); this.toast('Deal angelegt' + (f.ort ? ' · ' + f.ort : '')); },
+      onChatInput: (e) => this.setState({ chatInput: e.target.value }),
+      onChatKey: (e) => { if (e.key === 'Enter') this.send(this.state.chatInput); },
+      sendChat: () => this.send(this.state.chatInput),
+      sugA: () => this.send('Fass die Protokolle zusammen'), sugB: () => this.send('Was passiert bei Zins 4,5 %?'), sugC: () => this.send('Welche Fragen an den Verkäufer?'),
+    };
+  }
+}
+</script>
+</body>
+</html>

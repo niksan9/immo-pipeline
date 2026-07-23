@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: dealpilot-db
+    restart: unless-stopped
+    ports:
+      # Host 5434 -> container 5432. 5433 is immoflow-db (different project) — do not touch.
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: dealpilot
+      POSTGRES_PASSWORD: dealpilot_dev_pw
+      POSTGRES_DB: dealpilot
+    volumes:
+      - dealpilot-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dealpilot -d dealpilot"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  dealpilot-db-data:
