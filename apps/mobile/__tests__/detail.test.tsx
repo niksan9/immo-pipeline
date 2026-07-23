@@ -58,7 +58,7 @@ describe('DealDetailScreen — header', () => {
 });
 
 describe('DealDetailScreen — tab switching', () => {
-  it('shows Übersicht content by default, then Kalkulation, then a Dokumente stub', () => {
+  it('shows Übersicht content by default, then Kalkulation, then the Dokumente tab', () => {
     renderDetail();
     // Overview is default.
     expect(screen.getByText('KI-URTEIL')).toBeTruthy();
@@ -69,7 +69,7 @@ describe('DealDetailScreen — tab switching', () => {
     expect(screen.queryByText('KI-URTEIL')).toBeNull();
 
     fireEvent.press(screen.getByTestId('tab-docs'));
-    expect(screen.getByTestId('docs-stub')).toBeTruthy();
+    expect(screen.getByTestId('dd-card')).toBeTruthy();
   });
 });
 

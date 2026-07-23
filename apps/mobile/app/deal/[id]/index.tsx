@@ -29,6 +29,7 @@ import {
 } from '../../../src/components/detail/DetailHeader';
 import { OverviewTab } from '../../../src/components/detail/OverviewTab';
 import { CalcTab, type CalcActions } from '../../../src/components/detail/CalcTab';
+import { DocsTab } from '../../../src/components/detail/DocsTab';
 import { StubTab } from '../../../src/components/detail/StubTab';
 
 export default function DealDetailScreen() {
@@ -39,6 +40,7 @@ export default function DealDetailScreen() {
   const store = useDeals();
   const seed = store.getSeed(dealId);
   const state = store.getState(dealId);
+  const docs = store.getDocs(dealId);
   const toast = useToast();
 
   const [tab, setTab] = React.useState<DetailTab>('overview');
@@ -111,14 +113,22 @@ export default function DealDetailScreen() {
         {tab === 'calc' && (
           <CalcTab state={state} actions={actions} onToast={toast.show} />
         )}
-        {tab === 'docs' && (
-          <StubTab
-            title="Dokumente"
-            note="Due-Diligence-Checkliste, Befunde und Upload-Flow folgen in einer späteren Phase."
-            variant="docs"
-            testID="docs-stub"
-          />
-        )}
+        {tab === 'docs' &&
+          (docs ? (
+            <DocsTab
+              docs={docs}
+              onRequestDoc={(missingId) => store.requestDocument(dealId, missingId)}
+              onAddDocuments={(newDocs) => store.addDocuments(dealId, newDocs)}
+              onToast={toast.show}
+            />
+          ) : (
+            <StubTab
+              title="Dokumente"
+              note="Keine Dokumente für diesen Deal."
+              variant="docs"
+              testID="docs-stub"
+            />
+          ))}
         {tab === 'chat' && (
           <StubTab
             title="Chat"

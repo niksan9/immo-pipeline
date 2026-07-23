@@ -27,6 +27,11 @@ import type {
 import { applyContextProposal, transitionRisk } from '@dealpilot/core';
 import { SEED_DEALS, type SeedDeal } from './deals';
 import {
+  seedDocsState,
+  type DealDocument,
+  type DocsState,
+} from './documents';
+import {
   buildSections,
   deriveRows,
   type DealRowVM,
@@ -57,6 +62,9 @@ interface DealsStore {
   /** Live, mutable calc state for a deal (undefined for unknown ids). */
   getState: (id: string) => DealState | undefined;
 
+  /** Live, mutable document slice for a deal (undefined for unknown ids). */
+  getDocs: (id: string) => DocsState | undefined;
+
   // --- Mutations (all recompute every derived value live) ---
   setScenario: (id: string, scenario: Scenario) => void;
   /** Set the purchase price for a single scenario (Annahmen discount slider). */
@@ -82,6 +90,12 @@ interface DealsStore {
     riskId: string,
     proposal: ContextProposal,
   ) => void;
+
+  // --- Documents (mobile-side; core untouched) ---
+  /** Remove a missing document from the checklist (after a KI-Mail request). */
+  requestDocument: (id: string, missingId: string) => void;
+  /** Add a document to the deal's list, merging by id (skips existing). */
+  addDocuments: (id: string, docs: DealDocument[]) => void;
 }
 
 const DealsContext = React.createContext<DealsStore | null>(null);
@@ -104,6 +118,13 @@ function seedStates(seeds: SeedDeal[]): Record<string, DealState> {
   return out;
 }
 
+/** Fresh per-deal document slices keyed by deal id. */
+function seedDocsStates(seeds: SeedDeal[]): Record<string, DocsState> {
+  const out: Record<string, DocsState> = {};
+  for (const s of seeds) out[s.id] = seedDocsState();
+  return out;
+}
+
 export function DealsProvider({
   children,
   seeds = SEED_DEALS,
@@ -115,16 +136,32 @@ export function DealsProvider({
   const [states, setStates] = React.useState<Record<string, DealState>>(() =>
     seedStates(seeds),
   );
+  const [docs, setDocs] = React.useState<Record<string, DocsState>>(() =>
+    seedDocsStates(seeds),
+  );
 
   // Re-seed if the seed set itself changes (mainly for tests passing `seeds`).
   React.useEffect(() => {
     setStates(seedStates(seeds));
+    setDocs(seedDocsStates(seeds));
   }, [seeds]);
 
   /** Immutably replace one deal's state. */
   const update = React.useCallback(
     (id: string, fn: (s: DealState) => DealState) => {
       setStates((prev) => {
+        const cur = prev[id];
+        if (!cur) return prev;
+        return { ...prev, [id]: fn(cur) };
+      });
+    },
+    [],
+  );
+
+  /** Immutably replace one deal's document slice. */
+  const updateDocs = React.useCallback(
+    (id: string, fn: (d: DocsState) => DocsState) => {
+      setDocs((prev) => {
         const cur = prev[id];
         if (!cur) return prev;
         return { ...prev, [id]: fn(cur) };
@@ -154,6 +191,7 @@ export function DealsProvider({
       getSeed: (id) => seeds.find((s) => s.id === id),
       getRow: (id) => rows.find((r) => r.id === id),
       getState: (id) => states[id],
+      getDocs: (id) => docs[id],
 
       setScenario: (id, scenario) => update(id, (s) => ({ ...s, scenario })),
       setScenarioPrice: (id, scenario, price) =>
@@ -183,8 +221,21 @@ export function DealsProvider({
             r.id === riskId ? applyContextProposal(r, proposal) : r,
           ),
         })),
+
+      requestDocument: (id, missingId) =>
+        updateDocs(id, (d) => ({
+          ...d,
+          missing: d.missing.filter((m) => m.id !== missingId),
+        })),
+      addDocuments: (id, incoming) =>
+        updateDocs(id, (d) => {
+          const known = new Set(d.present.map((p) => p.id));
+          const added = incoming.filter((doc) => !known.has(doc.id));
+          if (added.length === 0) return d;
+          return { ...d, present: [...d.present, ...added] };
+        }),
     }),
-    [rows, query, sections, seeds, states, update],
+    [rows, query, sections, seeds, states, docs, update, updateDocs],
   );
 
   return <DealsContext.Provider value={value}>{children}</DealsContext.Provider>;
