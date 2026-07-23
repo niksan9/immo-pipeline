@@ -104,8 +104,10 @@ The one display-only override is the MFH's "teilverm." occupancy word — core's
 
 ## Deferred / not yet built
 
-- **Dokumente** and **Chat** tabs are visual "folgt" stubs (DD checklist, doc
-  viewer, upload flow, and the sourced KI-chat are a later phase).
+- **Chat** is a scripted multi-chat (keyword → canned reply + mandatory source
+  chip, ~900 ms typing delay); there are no real AI calls, and chats live in a
+  mobile-side store slice rather than in core's `DealState` (README's state model
+  puts them in the deal — a later migration).
 - Deal-Detail stub actions surface a toast: the header **⋮**, collaboration
   **Verwalten**, contact **Anrufen/E-Mail**, risk-row tap ("Risiko-Detail folgt"),
   and the Cashflow-Hero **info** button (Berechnungen-Sheet).

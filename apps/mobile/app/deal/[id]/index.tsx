@@ -1,9 +1,10 @@
 /**
  * Deal-Detail screen: fixed header (score / title / meta / price + tab bar) over
  * four tabs — Übersicht, Kalkulation (both fully live via @dealpilot/core),
- * Dokumente and Chat (visual stubs). All calc state lives in the store, so edits
- * here re-derive the pipeline row too. Tapping a risk row opens the nested
- * Risiko-Detail route (/deal/[id]/risk/[riskId]).
+ * Dokumente and Chat (live from the store's parallel doc / chat slices). All calc
+ * state lives in the store, so edits here re-derive the pipeline row too. Tapping
+ * a risk row opens the nested Risiko-Detail route (/deal/[id]/risk/[riskId]); a
+ * document's "Zum Dokument fragen" opens a linked chat on the Chat tab.
  */
 
 import * as React from 'react';
@@ -30,6 +31,7 @@ import {
 import { OverviewTab } from '../../../src/components/detail/OverviewTab';
 import { CalcTab, type CalcActions } from '../../../src/components/detail/CalcTab';
 import { DocsTab } from '../../../src/components/detail/DocsTab';
+import { ChatTab, type ChatActions } from '../../../src/components/detail/ChatTab';
 import { StubTab } from '../../../src/components/detail/StubTab';
 
 export default function DealDetailScreen() {
@@ -41,6 +43,7 @@ export default function DealDetailScreen() {
   const seed = store.getSeed(dealId);
   const state = store.getState(dealId);
   const docs = store.getDocs(dealId);
+  const chats = store.getChats(dealId);
   const toast = useToast();
 
   const [tab, setTab] = React.useState<DetailTab>('overview');
@@ -61,6 +64,25 @@ export default function DealDetailScreen() {
   const openRisk = React.useCallback(
     (riskId: string) => router.push(`/deal/${dealId}/risk/${riskId}`),
     [router, dealId],
+  );
+
+  const chatActions = React.useMemo<ChatActions>(
+    () => ({
+      sendChatMessage: (text) => store.sendChatMessage(dealId, text),
+      addAiReply: (chatId, reply) => store.addAiReply(dealId, chatId, reply),
+      newChat: () => store.newChat(dealId),
+      setActiveChat: (chatId) => store.setActiveChat(dealId, chatId),
+    }),
+    [store, dealId],
+  );
+
+  /** DocViewer "Zum Dokument fragen": start a linked chat + jump to the Chat tab. */
+  const askDocument = React.useCallback(
+    (doc: { id: string; name: string }) => {
+      store.startDocChat(dealId, doc.id, doc.name);
+      setTab('chat');
+    },
+    [store, dealId],
   );
 
   if (!seed || !state) {
@@ -119,6 +141,7 @@ export default function DealDetailScreen() {
               docs={docs}
               onRequestDoc={(missingId) => store.requestDocument(dealId, missingId)}
               onAddDocuments={(newDocs) => store.addDocuments(dealId, newDocs)}
+              onAskDocument={askDocument}
               onToast={toast.show}
             />
           ) : (
@@ -129,14 +152,24 @@ export default function DealDetailScreen() {
               testID="docs-stub"
             />
           ))}
-        {tab === 'chat' && (
-          <StubTab
-            title="Chat"
-            note="Der belegte KI-Chat zu diesem Deal folgt in einer späteren Phase."
-            variant="chat"
-            testID="chat-stub"
-          />
-        )}
+        {tab === 'chat' &&
+          (chats ? (
+            <ChatTab
+              chats={chats}
+              docs={docs}
+              actions={chatActions}
+              onOpenRisk={openRisk}
+              onSwitchTab={setTab}
+              onToast={toast.show}
+            />
+          ) : (
+            <StubTab
+              title="Chat"
+              note="Kein Chat für diesen Deal."
+              variant="chat"
+              testID="chat-stub"
+            />
+          ))}
       </View>
 
       <Toast controller={toast} bottom={insets.bottom + 24} />

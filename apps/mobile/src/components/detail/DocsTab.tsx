@@ -44,10 +44,18 @@ export interface DocsTabProps {
   onRequestDoc: (missingId: string) => void;
   /** Merge recognised documents into the deal (store.addDocuments). */
   onAddDocuments: (docs: DealDocument[]) => void;
+  /** "Zum Dokument fragen": open the Chat tab with a chat linked to the doc. */
+  onAskDocument: (doc: DealDocument) => void;
   onToast: (msg: string) => void;
 }
 
-export function DocsTab({ docs, onRequestDoc, onAddDocuments, onToast }: DocsTabProps) {
+export function DocsTab({
+  docs,
+  onRequestDoc,
+  onAddDocuments,
+  onAskDocument,
+  onToast,
+}: DocsTabProps) {
   const [expanded, setExpanded] = React.useState(false);
   const [activeDoc, setActiveDoc] = React.useState<DealDocument | null>(null);
   const [flowOpen, setFlowOpen] = React.useState(false);
@@ -243,7 +251,7 @@ export function DocsTab({ docs, onRequestDoc, onAddDocuments, onToast }: DocsTab
         onClose={() => setActiveDoc(null)}
         onAsk={(d) => {
           setActiveDoc(null);
-          onToast(`Chat zu „${d.name}" – bald verfügbar`);
+          onAskDocument(d);
         }}
       />
 

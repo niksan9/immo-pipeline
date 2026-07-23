@@ -32,6 +32,13 @@ import {
   type DocsState,
 } from './documents';
 import {
+  seedChatsState,
+  docChatThread,
+  NEW_CHAT_INTRO,
+  type ChatsState,
+} from './chats';
+import { deriveTitle, type ChatReply } from '../lib/chat';
+import {
   buildSections,
   deriveRows,
   type DealRowVM,
@@ -96,6 +103,27 @@ interface DealsStore {
   requestDocument: (id: string, missingId: string) => void;
   /** Add a document to the deal's list, merging by id (skips existing). */
   addDocuments: (id: string, docs: DealDocument[]) => void;
+
+  // --- Multi-chat (mobile-side; core untouched) ---
+  /** Live chat slice for a deal (undefined for unknown ids). */
+  getChats: (id: string) => ChatsState | undefined;
+  /**
+   * Append the user's message to the active chat, deriving the chat title from
+   * it while the chat is still "Neuer Chat" (see `deriveTitle`). The scripted AI
+   * reply is added separately (after the typing delay) via `addAiReply`.
+   */
+  sendChatMessage: (id: string, text: string) => void;
+  /** Append a scripted AI reply to a specific chat thread. */
+  addAiReply: (id: string, chatId: string, reply: ChatReply) => void;
+  /** Start a fresh empty chat ("Neuer Chat") and make it active. */
+  newChat: (id: string) => void;
+  /** Switch the active chat thread. */
+  setActiveChat: (id: string, chatId: string) => void;
+  /**
+   * Start a chat linked to a document ("Zum Dokument fragen") and make it
+   * active; returns the new chat id (or undefined for unknown deals).
+   */
+  startDocChat: (id: string, docId: string, docName: string) => string | undefined;
 }
 
 const DealsContext = React.createContext<DealsStore | null>(null);
@@ -125,6 +153,17 @@ function seedDocsStates(seeds: SeedDeal[]): Record<string, DocsState> {
   return out;
 }
 
+/** Fresh per-deal chat slices keyed by deal id. */
+function seedChatsStates(seeds: SeedDeal[]): Record<string, ChatsState> {
+  const out: Record<string, ChatsState> = {};
+  for (const s of seeds) out[s.id] = seedChatsState(s);
+  return out;
+}
+
+/** Monotonic counter for new chat ids (stable + collision-free in tests). */
+let chatSeq = 0;
+const nextChatId = (prefix: string) => `${prefix}-${(chatSeq += 1)}`;
+
 export function DealsProvider({
   children,
   seeds = SEED_DEALS,
@@ -139,11 +178,15 @@ export function DealsProvider({
   const [docs, setDocs] = React.useState<Record<string, DocsState>>(() =>
     seedDocsStates(seeds),
   );
+  const [chats, setChats] = React.useState<Record<string, ChatsState>>(() =>
+    seedChatsStates(seeds),
+  );
 
   // Re-seed if the seed set itself changes (mainly for tests passing `seeds`).
   React.useEffect(() => {
     setStates(seedStates(seeds));
     setDocs(seedDocsStates(seeds));
+    setChats(seedChatsStates(seeds));
   }, [seeds]);
 
   /** Immutably replace one deal's state. */
@@ -162,6 +205,18 @@ export function DealsProvider({
   const updateDocs = React.useCallback(
     (id: string, fn: (d: DocsState) => DocsState) => {
       setDocs((prev) => {
+        const cur = prev[id];
+        if (!cur) return prev;
+        return { ...prev, [id]: fn(cur) };
+      });
+    },
+    [],
+  );
+
+  /** Immutably replace one deal's chat slice. */
+  const updateChats = React.useCallback(
+    (id: string, fn: (c: ChatsState) => ChatsState) => {
+      setChats((prev) => {
         const cur = prev[id];
         if (!cur) return prev;
         return { ...prev, [id]: fn(cur) };
@@ -192,6 +247,7 @@ export function DealsProvider({
       getRow: (id) => rows.find((r) => r.id === id),
       getState: (id) => states[id],
       getDocs: (id) => docs[id],
+      getChats: (id) => chats[id],
 
       setScenario: (id, scenario) => update(id, (s) => ({ ...s, scenario })),
       setScenarioPrice: (id, scenario, price) =>
@@ -234,8 +290,60 @@ export function DealsProvider({
           if (added.length === 0) return d;
           return { ...d, present: [...d.present, ...added] };
         }),
+
+      sendChatMessage: (id, text) => {
+        const t = text.trim();
+        if (!t) return;
+        updateChats(id, (c) => ({
+          ...c,
+          threads: c.threads.map((thread) =>
+            thread.id === c.activeChatId
+              ? {
+                  ...thread,
+                  title: deriveTitle(thread.title, t),
+                  msgs: [...thread.msgs, { role: 'user', text: t, source: '' }],
+                }
+              : thread,
+          ),
+        }));
+      },
+      addAiReply: (id, chatId, reply) =>
+        updateChats(id, (c) => ({
+          ...c,
+          threads: c.threads.map((thread) =>
+            thread.id === chatId
+              ? { ...thread, msgs: [...thread.msgs, { role: 'ai', ...reply }] }
+              : thread,
+          ),
+        })),
+      newChat: (id) => {
+        const newId = nextChatId('neu');
+        updateChats(id, (c) => ({
+          activeChatId: newId,
+          threads: [
+            {
+              id: newId,
+              title: 'Neuer Chat',
+              linked: null,
+              msgs: [{ role: 'ai', text: NEW_CHAT_INTRO, source: '' }],
+            },
+            ...c.threads,
+          ],
+        }));
+      },
+      setActiveChat: (id, chatId) =>
+        updateChats(id, (c) => ({ ...c, activeChatId: chatId })),
+      startDocChat: (id, docId, docName) => {
+        if (!chats[id]) return undefined;
+        const newId = nextChatId('doc');
+        updateChats(id, (c) => ({
+          activeChatId: newId,
+          threads: [docChatThread(newId, docId, docName), ...c.threads],
+        }));
+        return newId;
+      },
     }),
-    [rows, query, sections, seeds, states, docs, update, updateDocs],
+    [rows, query, sections, seeds, states, docs, chats, update, updateDocs, updateChats],
   );
 
   return <DealsContext.Provider value={value}>{children}</DealsContext.Provider>;
