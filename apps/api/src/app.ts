@@ -6,7 +6,7 @@
  * the integration tests can bind them to the throwaway test database.
  */
 import type { DealState } from "@dealpilot/core";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Auth } from "./auth.js";
 import type { Database } from "./db/client.js";
@@ -14,7 +14,9 @@ import {
   dealCollaborators,
   deals,
   user as userTable,
+  userConsent,
   type CollaboratorRole,
+  type ConsentKind,
 } from "./db/schema.js";
 import { denormalize, isDealStateLike } from "./denormalize.js";
 
@@ -274,6 +276,75 @@ export function createApp({ auth, db }: AppDeps) {
         ),
       );
     return c.json({ ok: true });
+  });
+
+  // ---- Consent (legal compliance audit log) ----
+
+  // Map each request body key to its stored `kind`.
+  const CONSENT_BLOCKS: ReadonlyArray<{ key: string; kind: ConsentKind }> = [
+    { key: "agb", kind: "agb" },
+    { key: "aiNotice", kind: "ai_notice" },
+  ];
+
+  // ---- POST /api/consent — record accepted consent block(s) ----
+  api.post("/consent", async (c) => {
+    const uid = c.get("user").id;
+    const body = (await c.req.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
+    if (typeof body !== "object" || body === null) {
+      return c.json({ error: "Invalid consent body" }, 400);
+    }
+
+    const toInsert: Array<{ userId: string; kind: ConsentKind; version: string }> =
+      [];
+    for (const { key, kind } of CONSENT_BLOCKS) {
+      const block = body[key];
+      if (block === undefined) continue;
+      // A present block must be a well-formed acceptance: accepted === true and
+      // a non-empty version string. Anything else is a client bug → 400.
+      if (
+        typeof block !== "object" ||
+        block === null ||
+        (block as { accepted?: unknown }).accepted !== true ||
+        typeof (block as { version?: unknown }).version !== "string" ||
+        ((block as { version: string }).version).trim().length === 0
+      ) {
+        return c.json({ error: `Invalid consent block: ${key}` }, 400);
+      }
+      toInsert.push({
+        userId: uid,
+        kind,
+        version: (block as { version: string }).version,
+      });
+    }
+
+    // Append-only: one row per accepted block. No upsert — history is kept.
+    if (toInsert.length > 0) {
+      await db.insert(userConsent).values(toInsert);
+    }
+    return c.json({ ok: true });
+  });
+
+  // ---- GET /api/consent — latest accepted version per kind ----
+  api.get("/consent", async (c) => {
+    const uid = c.get("user").id;
+    const rows = await db.query.userConsent.findMany({
+      where: eq(userConsent.userId, uid),
+      orderBy: [desc(userConsent.acceptedAt), desc(userConsent.id)],
+    });
+    // First row seen per kind is the newest (rows are sorted acceptedAt desc).
+    const latest: Record<
+      ConsentKind,
+      { version: string; acceptedAt: Date } | null
+    > = { agb: null, ai_notice: null };
+    for (const row of rows) {
+      if (latest[row.kind] === null) {
+        latest[row.kind] = { version: row.version, acceptedAt: row.acceptedAt };
+      }
+    }
+    return c.json({ agb: latest.agb, aiNotice: latest.ai_notice });
   });
 
   app.route("/api", api);

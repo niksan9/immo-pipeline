@@ -16,6 +16,16 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
+// PipelineScreen reads the session for the greeting; mock the network-touching
+// auth client (the pure name helpers stay real).
+jest.mock('../src/lib/auth-client', () => ({
+  useSession: () => ({
+    data: { user: { id: 'u1', name: 'Niklas Berg', firstName: 'Niklas' } },
+    isPending: false,
+  }),
+  firstNameOf: jest.requireActual('../src/lib/name').firstNameOf,
+}));
+
 import PipelineScreen from '../app/index';
 import { CreateDealOverlay } from '../src/components/CreateDealOverlay';
 import { DealsProvider, useDeals } from '../src/data/store';
@@ -143,7 +153,7 @@ describe('store.createDeal', () => {
 describe('PipelineScreen — create flow navigates to the new deal', () => {
   beforeEach(() => mockPush.mockClear());
 
-  it('opens the overlay from the bottom-nav +, creates and pushes the route', () => {
+  it('opens the overlay from the floating action button, creates and pushes the route', () => {
     render(
       <SafeAreaProvider initialMetrics={initialMetrics}>
         <DealsProvider>
@@ -152,7 +162,7 @@ describe('PipelineScreen — create flow navigates to the new deal', () => {
       </SafeAreaProvider>,
     );
 
-    fireEvent.press(screen.getByTestId('nav-new-deal'));
+    fireEvent.press(screen.getByTestId('pipeline-fab'));
     expect(screen.getByTestId('create-overlay')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('create-verm-vermietet'));

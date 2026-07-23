@@ -27,6 +27,19 @@ export function createAuth(options?: {
       // Dev convenience: no email round-trip required to sign in.
       requireEmailVerification: false,
     },
+    user: {
+      // Onboarding captures the user's name split into two fields. Declaring
+      // them as additionalFields makes better-auth (a) accept them in the
+      // sign-up/email body and (b) return them on `getSession().user`. They are
+      // optional (required: false) so existing sign-up flows that omit them
+      // still succeed. The matching nullable columns live on the `user` table
+      // (src/db/auth-schema.ts) — additionalFields do NOT create columns; the
+      // drizzle schema + migration must provide them.
+      additionalFields: {
+        firstName: { type: "string", required: false },
+        lastName: { type: "string", required: false },
+      },
+    },
     trustedOrigins: options?.trustedOrigins ?? env.trustedOrigins,
     // The Expo server plugin lets the mobile app authenticate: it copies the
     // client's `expo-origin` header onto `origin` so better-auth's origin check

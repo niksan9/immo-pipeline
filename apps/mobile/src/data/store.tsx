@@ -56,6 +56,7 @@ import {
   type PipelineSection,
   type SortMode,
 } from '../lib/pipeline';
+import { computePortfolio, type PortfolioMetrics } from '../lib/portfolio';
 import type {
   CollabOp,
   DealSyncMeta,
@@ -96,6 +97,8 @@ interface DealsStore {
   query: string;
   setQuery: (q: string) => void;
   sections: PipelineSection[];
+  /** Portfolio KPIs (Gesamtwert / Base-Case-Cashflow / offene Risiken). */
+  portfolio: PortfolioMetrics;
   /** Active pipeline sort (⋮ action menu). */
   sortMode: SortMode;
   setSortMode: (mode: SortMode) => void;
@@ -520,6 +523,12 @@ export function DealsProvider({
     () => buildSections(rows, query),
     [rows, query],
   );
+  // Portfolio KPIs derive from the live states too, so the header updates the
+  // moment a price / assumption / risk changes (independent of the search query).
+  const portfolio = React.useMemo(
+    () => computePortfolio(liveSeeds),
+    [liveSeeds],
+  );
 
   // Granularity tradeoff: this single context value rebuilds on any deal
   // mutation (rows/states/docs/chats), so every consumer re-renders. Splitting
@@ -532,6 +541,7 @@ export function DealsProvider({
       query,
       setQuery,
       sections,
+      portfolio,
       sortMode,
       setSortMode,
       getSeed: (id) => seedList.find((s) => s.id === id),
@@ -791,6 +801,7 @@ export function DealsProvider({
       rows,
       query,
       sections,
+      portfolio,
       sortMode,
       seedList,
       states,

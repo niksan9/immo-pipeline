@@ -88,6 +88,179 @@ describe("auth", () => {
   });
 });
 
+describe("onboarding: firstName/lastName on the session", () => {
+  it("accepts firstName/lastName at sign-up and returns them on the session user", async () => {
+    const email = uniqueEmail("onb");
+    const res = await app.fetch(
+      new Request(`${BASE_URL}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password: "sup3rsecret!",
+          name: "Ada Lovelace",
+          firstName: "Ada",
+          lastName: "Lovelace",
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const cookie = res.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    // better-auth surfaces additionalFields on getSession().user.
+    const session = await app.fetch(
+      new Request(`${BASE_URL}/api/auth/get-session`, {
+        headers: { cookie },
+      }),
+    );
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as {
+      user: { firstName?: string; lastName?: string; email: string };
+    };
+    expect(body.user.firstName).toBe("Ada");
+    expect(body.user.lastName).toBe("Lovelace");
+    expect(body.user.email).toBe(email);
+  });
+
+  it("sign-up still succeeds when firstName/lastName are omitted (optional)", async () => {
+    const email = uniqueEmail("onb-noname");
+    const user = await signup(email);
+    const session = await app.fetch(
+      new Request(`${BASE_URL}/api/auth/get-session`, {
+        headers: { cookie: user.cookie },
+      }),
+    );
+    const body = (await session.json()) as {
+      user: { firstName: string | null; lastName: string | null };
+    };
+    expect(body.user.firstName ?? null).toBeNull();
+    expect(body.user.lastName ?? null).toBeNull();
+  });
+});
+
+describe("consent", () => {
+  const AGB_V1 = "agb-2026-01";
+  const AGB_V2 = "agb-2026-07";
+  const AI_V1 = "ai-2026-01";
+
+  it("records AGB + KI-Hinweis together and GET returns the latest versions", async () => {
+    const user = await signup(uniqueEmail("consent"));
+    const post = await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: {
+        agb: { accepted: true, version: AGB_V1 },
+        aiNotice: { accepted: true, version: AI_V1 },
+      },
+    });
+    expect(post.status).toBe(200);
+    expect((await post.json()) as { ok: boolean }).toEqual({ ok: true });
+
+    const get = await apiRequest("GET", "/api/consent", { cookie: user.cookie });
+    expect(get.status).toBe(200);
+    const body = (await get.json()) as {
+      agb: { version: string } | null;
+      aiNotice: { version: string } | null;
+    };
+    expect(body.agb?.version).toBe(AGB_V1);
+    expect(body.aiNotice?.version).toBe(AI_V1);
+
+    // Two rows persisted (one per accepted block).
+    const rows = await sql/* sql */ `
+      SELECT kind, version FROM user_consent WHERE user_id = ${user.id}`;
+    expect(rows).toHaveLength(2);
+  });
+
+  it("records blocks sent separately", async () => {
+    const user = await signup(uniqueEmail("consent-sep"));
+    const a = await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { agb: { accepted: true, version: AGB_V1 } },
+    });
+    expect(a.status).toBe(200);
+    const b = await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { aiNotice: { accepted: true, version: AI_V1 } },
+    });
+    expect(b.status).toBe(200);
+
+    const get = await apiRequest("GET", "/api/consent", { cookie: user.cookie });
+    const body = (await get.json()) as {
+      agb: { version: string } | null;
+      aiNotice: { version: string } | null;
+    };
+    expect(body.agb?.version).toBe(AGB_V1);
+    expect(body.aiNotice?.version).toBe(AI_V1);
+  });
+
+  it("appends history: a newer version is added and GET returns the newest", async () => {
+    const user = await signup(uniqueEmail("consent-hist"));
+    await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { agb: { accepted: true, version: AGB_V1 } },
+    });
+    // Ensure a later acceptedAt (defaultNow) so ordering is unambiguous.
+    await new Promise((r) => setTimeout(r, 10));
+    await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { agb: { accepted: true, version: AGB_V2 } },
+    });
+
+    const get = await apiRequest("GET", "/api/consent", { cookie: user.cookie });
+    const body = (await get.json()) as { agb: { version: string } | null };
+    expect(body.agb?.version).toBe(AGB_V2);
+
+    // History is kept: both rows remain (append-only, no upsert).
+    const rows = await sql/* sql */ `
+      SELECT version FROM user_consent
+      WHERE user_id = ${user.id} AND kind = 'agb'`;
+    expect(rows).toHaveLength(2);
+  });
+
+  it("GET returns null for a kind with no consent yet", async () => {
+    const user = await signup(uniqueEmail("consent-empty"));
+    const get = await apiRequest("GET", "/api/consent", { cookie: user.cookie });
+    const body = (await get.json()) as {
+      agb: unknown;
+      aiNotice: unknown;
+    };
+    expect(body.agb).toBeNull();
+    expect(body.aiNotice).toBeNull();
+  });
+
+  it("rejects a block with accepted:false (400, nothing persisted)", async () => {
+    const user = await signup(uniqueEmail("consent-reject"));
+    const res = await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { agb: { accepted: false, version: AGB_V1 } },
+    });
+    expect(res.status).toBe(400);
+    const rows = await sql/* sql */ `
+      SELECT id FROM user_consent WHERE user_id = ${user.id}`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it("rejects a block missing a version (400)", async () => {
+    const user = await signup(uniqueEmail("consent-nover"));
+    const res = await apiRequest("POST", "/api/consent", {
+      cookie: user.cookie,
+      body: { aiNotice: { accepted: true } },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 401 for unauthenticated consent requests", async () => {
+    const post = await apiRequest("POST", "/api/consent", {
+      body: { agb: { accepted: true, version: AGB_V1 } },
+    });
+    expect(post.status).toBe(401);
+    const get = await apiRequest("GET", "/api/consent");
+    expect(get.status).toBe(401);
+  });
+});
+
 describe("expo plugin", () => {
   // The Expo client sends its app scheme as an `expo-origin` header (there is
   // no browser `origin` on a native request). The expo() server plugin copies

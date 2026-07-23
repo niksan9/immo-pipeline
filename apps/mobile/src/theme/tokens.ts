@@ -16,6 +16,7 @@ export const colors = {
   // Surfaces / neutrals
   bgApp: '#f7f5f2', // App background (screens)
   bgCanvas: '#e9e6e1', // Exploration canvas (Pipeline.dc.html only)
+  paper: '#f4efe6', // Pipeline "4b" header paper background
   surface: '#ffffff', // Cards, rows, sheets
 
   // Text

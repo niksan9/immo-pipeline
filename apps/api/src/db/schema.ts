@@ -9,6 +9,7 @@
 import type { DealState } from "@dealpilot/core";
 import { relations } from "drizzle-orm";
 import {
+  index,
   integer,
   jsonb,
   pgTable,
@@ -84,6 +85,32 @@ export const dealCollaborators = pgTable(
 
 export type CollaboratorRow = typeof dealCollaborators.$inferSelect;
 export type NewCollaboratorRow = typeof dealCollaborators.$inferInsert;
+
+/** The kinds of legal consent we record. */
+export type ConsentKind = "agb" | "ai_notice";
+
+/**
+ * Append-only audit log of legal consent (AGB + KI-Hinweis) accepted during
+ * onboarding. One row per accepted block; history is never overwritten so the
+ * exact version and timestamp a user agreed to stay provable for compliance.
+ */
+export const userConsent = pgTable(
+  "user_consent",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<ConsentKind>().notNull(),
+    version: text("version").notNull(),
+    acceptedAt: timestamp("accepted_at").notNull().defaultNow(),
+  },
+  // GET /api/consent reads the latest row per (user, kind).
+  (t) => [index("user_consent_user_id_kind_idx").on(t.userId, t.kind)],
+);
+
+export type UserConsentRow = typeof userConsent.$inferSelect;
+export type NewUserConsentRow = typeof userConsent.$inferInsert;
 
 export const dealsRelations = relations(deals, ({ many, one }) => ({
   owner: one(user, { fields: [deals.ownerId], references: [user.id] }),

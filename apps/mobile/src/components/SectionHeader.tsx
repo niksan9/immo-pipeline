@@ -23,10 +23,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 22,
     paddingTop: spacing.lg,
-    paddingBottom: 6,
+    paddingBottom: spacing.xs,
+    backgroundColor: colors.surface,
   },
-  label: { ...type.monoLabel },
-  count: { ...type.monoLabel },
+  label: { ...type.monoLabel, fontSize: 11, letterSpacing: 1.3 },
+  // Muted grey counter (design token #c9c4bb) — quieter than the label.
+  count: { ...type.monoLabel, fontSize: 11, letterSpacing: 1.3, color: '#c9c4bb' },
 });

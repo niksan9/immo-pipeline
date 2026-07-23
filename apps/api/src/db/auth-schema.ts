@@ -7,6 +7,11 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  // Captured during onboarding (registration). Declared as better-auth
+  // user.additionalFields in src/auth.ts, so they are accepted at sign-up and
+  // returned on getSession().user. Nullable — optional additional fields.
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

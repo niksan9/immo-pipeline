@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { colors, radii, spacing } from '../theme/tokens';
+import { colors, radii } from '../theme/tokens';
 import { type } from '../theme/typography';
 import { SearchIcon } from './icons';
 
@@ -32,21 +32,25 @@ export function SearchBar({ value, onChangeText }: SearchBarProps) {
 }
 
 const styles = StyleSheet.create({
+  // On the paper-coloured header the search field is a floating white pill with
+  // a soft drop shadow (matches the "4b" prototype), not a bordered bar.
   wrap: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.md,
+    paddingHorizontal: 4,
+    marginTop: 11,
   },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    backgroundColor: colors.chipBg,
+    backgroundColor: colors.surface,
     borderRadius: radii.chip,
     paddingHorizontal: 13,
     paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
   },
   input: {
     flex: 1,

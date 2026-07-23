@@ -13,6 +13,14 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
+jest.mock('../src/lib/auth-client', () => ({
+  useSession: () => ({
+    data: { user: { id: 'u1', name: 'Niklas Berg', firstName: 'Niklas' } },
+    isPending: false,
+  }),
+  firstNameOf: jest.requireActual('../src/lib/name').firstNameOf,
+}));
+
 import PipelineScreen from '../app/index';
 import { DealsProvider } from '../src/data/store';
 

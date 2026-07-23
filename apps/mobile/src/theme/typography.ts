@@ -124,6 +124,22 @@ export const type = {
     fontSize: 9.5,
   } satisfies TextStyle,
 
+  /** Pipeline greeting name — Bricolage 22 (design calls for 800; 700 loaded). */
+  greetingName: {
+    fontFamily: fonts.bricolage700,
+    fontSize: 22,
+    letterSpacing: -0.22, // ~ -0.01em
+    color: colors.ink,
+  } satisfies TextStyle,
+
+  /** Gesamtwert big number — Bricolage 30 (design 800; 700 loaded). */
+  portfolioBig: {
+    fontFamily: fonts.bricolage700,
+    fontSize: 30,
+    letterSpacing: -0.3, // ~ -0.01em
+    color: colors.ink,
+  } satisfies TextStyle,
+
   /** Collaborator avatar initials — Hanken 8.5 / 600. */
   avatar: {
     fontFamily: fonts.hanken600,

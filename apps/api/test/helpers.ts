@@ -23,7 +23,8 @@ export { app, auth, db, sql, BASE_URL };
 /** Remove all rows between tests. Order/CASCADE handles FKs. */
 export async function truncateAll(): Promise<void> {
   await sql/* sql */ `TRUNCATE TABLE
-    deal_collaborators, deals, "session", "account", "verification", "user"
+    user_consent, deal_collaborators, deals,
+    "session", "account", "verification", "user"
     RESTART IDENTITY CASCADE`;
 }
 

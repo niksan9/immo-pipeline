@@ -37,6 +37,42 @@ export const authClient = createAuthClient({
 
 export const { useSession, signIn, signUp, signOut } = authClient;
 
+// Re-export the pure name helpers so callers can reach them alongside the
+// session API (implementation lives in ./name to stay side-effect-free).
+export { splitFullName, firstNameOf } from './name';
+
+export interface RegisterFields {
+  email: string;
+  password: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+}
+
+/**
+ * Email/password registration carrying the better-auth additionalFields
+ * `firstName` / `lastName` (the API declares them, and the session `user`
+ * returns them). Cast is contained here because the base `signUp.email` type
+ * does not know about the server's additional fields.
+ */
+export function registerWithEmail(fields: RegisterFields) {
+  return signUp.email(
+    fields as unknown as Parameters<typeof signUp.email>[0],
+  );
+}
+
+/**
+ * Persist the authoritative first/last name from the Profil step via
+ * better-auth `updateUser`. The session `user.firstName` then feeds the
+ * pipeline greeting.
+ */
+export function updateProfileName(firstName: string, lastName: string) {
+  return authClient.updateUser({
+    firstName,
+    lastName,
+  } as unknown as Parameters<typeof authClient.updateUser>[0]);
+}
+
 /**
  * The `Cookie` header value for the current session, or "" when signed out.
  * Used by the sync engine to authenticate its own requests to the deal API.

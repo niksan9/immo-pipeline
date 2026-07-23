@@ -28,6 +28,7 @@ import {
   useSession,
 } from '../src/lib/auth-client';
 import { AuthGate } from '../src/lib/AuthGate';
+import { OnboardingProvider, useOnboarding } from '../src/lib/onboarding';
 import { SyncStatusContext } from '../src/lib/syncStatus';
 import { SyncController, type SyncStatus, type SyncStore } from '../src/lib/sync';
 import {
@@ -199,27 +200,40 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayout}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <StoreShell
-          key={userId ?? 'anon'}
-          userId={userId}
-          snapshot={authed ? snapshot : null}
-        >
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.bgApp },
-            }}
+        <OnboardingProvider authed={authed}>
+          <StoreShell
+            key={userId ?? 'anon'}
+            userId={userId}
+            snapshot={authed ? snapshot : null}
           >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="profile" />
-            <Stack.Screen name="deal/[id]/index" />
-            <Stack.Screen name="deal/[id]/risk/[riskId]" />
-            <Stack.Screen name="(auth)/sign-in" />
-            <Stack.Screen name="(auth)/sign-up" />
-          </Stack>
-          <AuthGate authed={authed} />
-        </StoreShell>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.bgApp },
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="profile" />
+              <Stack.Screen name="deal/[id]/index" />
+              <Stack.Screen name="deal/[id]/risk/[riskId]" />
+              <Stack.Screen name="onboarding/welcome" />
+              <Stack.Screen name="onboarding/auth" />
+              <Stack.Screen name="onboarding/profile" />
+              <Stack.Screen name="onboarding/ai-notice" />
+            </Stack>
+            <GatedRedirect authed={authed} />
+          </StoreShell>
+        </OnboardingProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+/**
+ * Bridges the onboarding `pending` flag into the {@link AuthGate}. Kept as a
+ * child of {@link OnboardingProvider} so it can read the sub-flow state.
+ */
+function GatedRedirect({ authed }: { authed: boolean }) {
+  const { pending } = useOnboarding();
+  return <AuthGate authed={authed} pending={pending} />;
 }

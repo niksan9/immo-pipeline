@@ -84,6 +84,20 @@ export function PlusIcon({ size = 20, color = '#ffffff' }: IconProps) {
   );
 }
 
+/** Floating-action-button + (stroke) — "Deal anlegen". */
+export function FabPlusIcon({ size = 22, color = '#ffffff' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 22 22" fill="none">
+      <Path
+        d="M11 4v14M4 11h14"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 /** Bottom-nav: profile. */
 export function ProfileIcon({ size = 21, color = colors.faintAlt }: IconProps) {
   return (

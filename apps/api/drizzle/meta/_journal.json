@@ -15,6 +15,13 @@
       "when": 1784819123770,
       "tag": "0001_aberrant_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784829035597,
+      "tag": "0002_violet_invisible_woman",
+      "breakpoints": true
     }
   ]
 }
