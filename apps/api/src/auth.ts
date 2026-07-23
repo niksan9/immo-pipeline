@@ -5,8 +5,9 @@
  * is the default app instance and is also what the better-auth CLI reads to
  * generate the schema (`pnpm auth:generate`).
  */
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { expo } from "@better-auth/expo";
 import { db as defaultDb, type Database } from "./db/client.js";
 import { env } from "./env.js";
 
@@ -27,6 +28,19 @@ export function createAuth(options?: {
       requireEmailVerification: false,
     },
     trustedOrigins: options?.trustedOrigins ?? env.trustedOrigins,
+    // The Expo server plugin lets the mobile app authenticate: it copies the
+    // client's `expo-origin` header onto `origin` so better-auth's origin check
+    // passes against a trusted app scheme, and it powers the deep-link OAuth
+    // proxy (unused here — we only do email+password). See env.trustedOrigins
+    // for the accepted schemes (`dealpilot://`, `exp://`).
+    //
+    // Cast to the generic plugin type: the plugin's concrete `endpoints` shape
+    // pulls zod's deeply-nested (`zod/v4/core`) types into the inferred `Auth`
+    // type, which pnpm's realpath layout makes non-portable (TS2742). We never
+    // call the plugin's own endpoints (they power OAuth deep-links, unused with
+    // email+password), so erasing their types here is safe and keeps `Auth`
+    // nameable without a hoisted zod.
+    plugins: [expo() as BetterAuthPlugin],
   });
 }
 

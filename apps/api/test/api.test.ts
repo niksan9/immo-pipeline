@@ -1,7 +1,9 @@
 import type { DealState } from "@dealpilot/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  app,
   apiRequest,
+  BASE_URL,
   closeDb,
   signin,
   signup,
@@ -82,6 +84,32 @@ describe("auth", () => {
     const email = uniqueEmail();
     await signup(email, "correct-horse");
     await expect(signin(email, "wrong-password")).rejects.toThrow();
+  });
+});
+
+describe("expo plugin", () => {
+  // The Expo client sends its app scheme as an `expo-origin` header (there is
+  // no browser `origin` on a native request). The expo() server plugin copies
+  // it onto `origin`, which better-auth then checks against trustedOrigins.
+  it("accepts a sign-up carrying the trusted app-scheme expo-origin", async () => {
+    const email = uniqueEmail("expo");
+    const res = await app.fetch(
+      new Request(`${BASE_URL}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "expo-origin": "dealpilot://",
+        },
+        body: JSON.stringify({
+          email,
+          password: "sup3rsecret!",
+          name: "Expo User",
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { user?: { id?: string } };
+    expect(body.user?.id).toBeTruthy();
   });
 });
 

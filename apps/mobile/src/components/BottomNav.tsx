@@ -9,13 +9,16 @@ export interface BottomNavProps {
   onStub?: (label: string) => void;
   /** Central + button — opens the "Deal anlegen" overlay. */
   onNewDeal?: () => void;
+  /** Opens the profile screen (email · sync status · sign-out). */
+  onProfile?: () => void;
 }
 
 /**
  * Bottom navigation: Pipeline · Markt · + (central, emphasized) · Profil.
- * Markt / Profil are non-functional stubs; + opens the create overlay.
+ * Markt is a non-functional stub; + opens the create overlay; Profil opens the
+ * profile screen.
  */
-export function BottomNav({ onStub, onNewDeal }: BottomNavProps) {
+export function BottomNav({ onStub, onNewDeal, onProfile }: BottomNavProps) {
   return (
     <View style={styles.nav}>
       <View style={styles.item}>
@@ -45,9 +48,10 @@ export function BottomNav({ onStub, onNewDeal }: BottomNavProps) {
 
       <Pressable
         style={styles.item}
-        onPress={() => onStub?.('Profil')}
+        onPress={onProfile}
         accessibilityRole="button"
         accessibilityLabel="Profil"
+        testID="nav-profile"
       >
         <ProfileIcon color={colors.faintAlt} />
         <Text style={[styles.label, styles.inactive]}>Profil</Text>

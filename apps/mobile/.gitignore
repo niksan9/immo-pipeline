@@ -4,6 +4,11 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Local env (EXPO_PUBLIC_API_URL etc.) — keep the example tracked
+.env
+.env*.local
+!.env.example
+
 # Native
 *.orig.*
 *.jks

@@ -54,6 +54,13 @@ import {
   type PipelineSection,
   type SortMode,
 } from '../lib/pipeline';
+import type {
+  CollabOp,
+  DealSyncMeta,
+  SyncStore,
+  Tombstone,
+} from '../lib/sync';
+import type { PersistedSnapshot } from './persistence';
 
 /** Assumption fields (non-financing) editable in the Annahmen-Sheet. */
 export type AssumptionPatch = Partial<
@@ -207,6 +214,67 @@ function seedChatsStates(seeds: SeedDeal[]): Record<string, ChatsState> {
   return out;
 }
 
+/** Placeholder KI verdict for a deal pulled from the server (no local analysis). */
+const SYNCED_VERDICT =
+  'Von einem anderen Gerät synchronisiert. Öffne den Deal, um Kennzahlen zu ' +
+  'prüfen oder Unterlagen zu ergänzen.';
+
+/** Fresh sync-meta for the seed deals: unpushed + dirty so a first sync POSTs them. */
+function seedSyncMeta(seeds: SeedDeal[], now: number): Record<string, DealSyncMeta> {
+  const out: Record<string, DealSyncMeta> = {};
+  for (const s of seeds) out[s.id] = { serverId: null, updatedAt: now, dirty: true };
+  return out;
+}
+
+/** The mutable store slices, assembled from a snapshot (hydrate) or the seeds. */
+interface StoreInit {
+  seedList: SeedDeal[];
+  states: Record<string, DealState>;
+  docs: Record<string, DocsState>;
+  chats: Record<string, ChatsState>;
+  sortMode: SortMode;
+  syncMeta: Record<string, DealSyncMeta>;
+  tombstones: Tombstone[];
+  collabOps: CollabOp[];
+}
+
+function buildInit(
+  seeds: SeedDeal[],
+  snapshot: PersistedSnapshot | null | undefined,
+): StoreInit {
+  if (snapshot) {
+    return {
+      seedList: snapshot.seedList,
+      states: snapshot.states,
+      docs: snapshot.docs,
+      chats: snapshot.chats,
+      sortMode: snapshot.sortMode,
+      syncMeta: snapshot.syncMeta,
+      tombstones: snapshot.tombstones,
+      collabOps: snapshot.collabOps,
+    };
+  }
+  const list = initSeedList(seeds);
+  return {
+    seedList: list,
+    states: seedStates(seeds),
+    docs: seedDocsStates(seeds),
+    chats: seedChatsStates(seeds),
+    sortMode: 'score',
+    syncMeta: seedSyncMeta(list, Date.now()),
+    tombstones: [],
+    collabOps: [],
+  };
+}
+
+/** Local role → server collaborator role. */
+function serverRole(role: 'edit' | 'view'): 'editor' | 'viewer' {
+  return role === 'edit' ? 'editor' : 'viewer';
+}
+
+/** Monotonic counter for queued collaborator ops (stable ids in tests). */
+let collabOpSeq = 0;
+
 /** Monotonic counter for new chat ids (stable + collision-free in tests). */
 let chatSeq = 0;
 const nextChatId = (prefix: string) => `${prefix}-${(chatSeq += 1)}`;
@@ -236,38 +304,105 @@ function slugify(text: string): string {
   return s || 'deal';
 }
 
+export interface DealsProviderProps {
+  children: React.ReactNode;
+  seeds?: SeedDeal[];
+  /**
+   * Hydrate every slice from a persisted snapshot instead of the mock seeds.
+   * When absent/null the store seeds the mock deals (first run).
+   */
+  initialSnapshot?: PersistedSnapshot | null;
+  /**
+   * Called on every persisted-slice change with the full snapshot to save.
+   * The caller (root layout) debounces the actual AsyncStorage write. Omitted
+   * in tests → the store has no persistence side effects.
+   */
+  onPersist?: (snapshot: PersistedSnapshot) => void;
+  /**
+   * Receives the sync-store adapter once, so a SyncController can pull/push the
+   * deals against the API. Omitted in tests → no sync.
+   */
+  bindSyncStore?: (store: SyncStore) => void;
+  /** Called after each sync-relevant local mutation, to debounce a push. */
+  onLocalChange?: () => void;
+}
+
 export function DealsProvider({
   children,
   seeds = SEED_DEALS,
-}: {
-  children: React.ReactNode;
-  seeds?: SeedDeal[];
-}) {
-  const [query, setQuery] = React.useState('');
-  const [sortMode, setSortMode] = React.useState<SortMode>('score');
-  // The ordered, mutable list of deals (add / remove / status live here).
-  const [seedList, setSeedList] = React.useState<SeedDeal[]>(() =>
-    initSeedList(seeds),
-  );
-  const [states, setStates] = React.useState<Record<string, DealState>>(() =>
-    seedStates(seeds),
-  );
-  const [docs, setDocs] = React.useState<Record<string, DocsState>>(() =>
-    seedDocsStates(seeds),
-  );
-  const [chats, setChats] = React.useState<Record<string, ChatsState>>(() =>
-    seedChatsStates(seeds),
-  );
+  initialSnapshot,
+  onPersist,
+  bindSyncStore,
+  onLocalChange,
+}: DealsProviderProps) {
+  const init = React.useRef(buildInit(seeds, initialSnapshot)).current;
 
-  // Re-seed if the seed set itself changes (mainly for tests passing `seeds`).
+  const [query, setQuery] = React.useState('');
+  const [sortMode, setSortMode] = React.useState<SortMode>(init.sortMode);
+  // The ordered, mutable list of deals (add / remove / status live here).
+  const [seedList, setSeedList] = React.useState<SeedDeal[]>(init.seedList);
+  const [states, setStates] = React.useState<Record<string, DealState>>(
+    init.states,
+  );
+  const [docs, setDocs] = React.useState<Record<string, DocsState>>(init.docs);
+  const [chats, setChats] = React.useState<Record<string, ChatsState>>(
+    init.chats,
+  );
+  // Sync bookkeeping (server id / last-modified / dirty per deal, plus the
+  // delete tombstones and queued collaborator ops). Kept out of the render VM.
+  const [syncMeta, setSyncMeta] = React.useState<Record<string, DealSyncMeta>>(
+    init.syncMeta,
+  );
+  const [tombstones, setTombstones] = React.useState<Tombstone[]>(
+    init.tombstones,
+  );
+  const [collabOps, setCollabOps] = React.useState<CollabOp[]>(init.collabOps);
+
+  // Latest-value refs so the async SyncController adapter reads current data.
+  const seedListRef = React.useRef(seedList);
+  const statesRef = React.useRef(states);
+  const syncMetaRef = React.useRef(syncMeta);
+  const tombstonesRef = React.useRef(tombstones);
+  const collabOpsRef = React.useRef(collabOps);
+  seedListRef.current = seedList;
+  statesRef.current = states;
+  syncMetaRef.current = syncMeta;
+  tombstonesRef.current = tombstones;
+  collabOpsRef.current = collabOps;
+
+  const onLocalChangeRef = React.useRef(onLocalChange);
+  onLocalChangeRef.current = onLocalChange;
+
+  /** Mark a deal as locally changed (bump updatedAt + dirty) and nudge sync. */
+  const touchSync = React.useCallback((id: string) => {
+    setSyncMeta((prev) => {
+      const cur = prev[id] ?? { serverId: null, updatedAt: 0, dirty: false };
+      return { ...prev, [id]: { ...cur, updatedAt: Date.now(), dirty: true } };
+    });
+    onLocalChangeRef.current?.();
+  }, []);
+
+  // Re-seed only when the `seeds` prop itself changes *after* mount (mainly for
+  // tests). The initial slices already come from `buildInit`, so we skip the
+  // first run to avoid clobbering a hydrated snapshot.
+  const seededOnce = React.useRef(false);
   React.useEffect(() => {
-    setSeedList(initSeedList(seeds));
+    if (!seededOnce.current) {
+      seededOnce.current = true;
+      return;
+    }
+    if (initialSnapshot) return; // snapshot-driven store is never re-seeded
+    const list = initSeedList(seeds);
+    setSeedList(list);
     setStates(seedStates(seeds));
     setDocs(seedDocsStates(seeds));
     setChats(seedChatsStates(seeds));
-  }, [seeds]);
+    setSyncMeta(seedSyncMeta(list, Date.now()));
+    setTombstones([]);
+    setCollabOps([]);
+  }, [seeds, initialSnapshot]);
 
-  /** Immutably replace one deal's state. */
+  /** Immutably replace one deal's state (and mark it dirty for sync). */
   const update = React.useCallback(
     (id: string, fn: (s: DealState) => DealState) => {
       setStates((prev) => {
@@ -275,8 +410,9 @@ export function DealsProvider({
         if (!cur) return prev;
         return { ...prev, [id]: fn(cur) };
       });
+      touchSync(id);
     },
-    [],
+    [touchSync],
   );
 
   /** Immutably replace one deal's document slice. */
@@ -356,9 +492,30 @@ export function DealsProvider({
         setStates((prev) => ({ ...prev, [id]: seed.state }));
         // New deals start with no documents / chats (the Docs & Chat tabs show
         // their empty-state stubs until the user uploads something).
+        // Register sync meta: unpushed + dirty so the next sync POSTs it.
+        setSyncMeta((prev) => ({
+          ...prev,
+          [id]: { serverId: null, updatedAt: Date.now(), dirty: true },
+        }));
+        onLocalChangeRef.current?.();
         return id;
       },
       deleteDeal: (id) => {
+        // Record a tombstone (with the server id, if any) so a later pull can't
+        // resurrect the deal; the sync engine issues the server DELETE.
+        const serverId = syncMetaRef.current[id]?.serverId ?? null;
+        setTombstones((prev) =>
+          prev.some((t) => t.localId === id)
+            ? prev
+            : [...prev, { localId: id, serverId }],
+        );
+        setSyncMeta((prev) => {
+          if (!prev[id]) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setCollabOps((prev) => prev.filter((o) => o.localId !== id));
         setSeedList((prev) => prev.filter((s) => s.id !== id));
         setStates((prev) => {
           if (!prev[id]) return prev;
@@ -378,6 +535,7 @@ export function DealsProvider({
           delete next[id];
           return next;
         });
+        onLocalChangeRef.current?.();
       },
       setDealStatus: (id, status) =>
         update(id, (s) => ({ ...s, deal: { ...s.deal, dealStatus: status } })),
@@ -422,14 +580,46 @@ export function DealsProvider({
           ...s,
           collaborators: [...s.collaborators, collaborator],
         }));
+        // Collaboration is inherently server-side (the API grants access by
+        // account email). Queue the invite for the collaborators endpoint;
+        // offline → it stays queued and retries on the next sync.
+        setCollabOps((prev) => [
+          ...prev,
+          {
+            id: `co-${(collabOpSeq += 1)}`,
+            localId: id,
+            op: 'add',
+            email: trimmed,
+            role: serverRole(role),
+          },
+        ]);
+        onLocalChangeRef.current?.();
       },
-      removeCollaborator: (id, collabId) =>
+      removeCollaborator: (id, collabId) => {
+        // Look up the removed collaborator's email (the server endpoint keys on
+        // email) before we drop them from local state.
+        const target = statesRef.current[id]?.collaborators.find(
+          (c) => c.id === collabId,
+        );
         update(id, (s) => ({
           ...s,
           collaborators: s.collaborators.filter(
             (c) => c.role === 'owner' || c.id !== collabId,
           ),
-        })),
+        }));
+        if (target?.email) {
+          setCollabOps((prev) => [
+            ...prev,
+            {
+              id: `co-${(collabOpSeq += 1)}`,
+              localId: id,
+              op: 'remove',
+              email: target.email,
+            },
+          ]);
+          onLocalChangeRef.current?.();
+        }
+      },
 
       transitionRisk: (id, riskId, to) =>
         update(id, (s) => ({
@@ -525,6 +715,106 @@ export function DealsProvider({
       updateChats,
     ],
   );
+
+  // ---- Sync adapter: lets a SyncController read/write these slices ----------
+  // Reads go through the latest-value refs; writes go through setState. Writes
+  // here are server-originated (pull / push-ack) so they clear dirty and never
+  // re-nudge the push loop.
+  const syncStore = React.useMemo<SyncStore>(
+    () => ({
+      getLocalDeals: () =>
+        seedListRef.current.map((s) => {
+          const m = syncMetaRef.current[s.id] ?? {
+            serverId: null,
+            updatedAt: 0,
+            dirty: false,
+          };
+          return {
+            localId: s.id,
+            serverId: m.serverId,
+            state: statesRef.current[s.id] ?? s.state,
+            updatedAt: m.updatedAt,
+            dirty: m.dirty,
+          };
+        }),
+      getTombstones: () => tombstonesRef.current,
+      getCollabOps: () => collabOpsRef.current,
+      applyServerDeal: (serverId, serverState, updatedAt) => {
+        const existingId = Object.keys(syncMetaRef.current).find(
+          (localId) => syncMetaRef.current[localId]?.serverId === serverId,
+        );
+        if (existingId) {
+          setStates((prev) => ({ ...prev, [existingId]: serverState }));
+          setSeedList((prev) =>
+            prev.map((s) =>
+              s.id === existingId ? { ...s, state: serverState } : s,
+            ),
+          );
+          setSyncMeta((prev) => ({
+            ...prev,
+            [existingId]: { serverId, updatedAt, dirty: false },
+          }));
+          return;
+        }
+        // Unknown locally → materialize a SeedDeal keyed by the server id.
+        const createdSeq =
+          seedListRef.current.reduce(
+            (m, s) => Math.max(m, s.createdSeq ?? 0),
+            0,
+          ) + 1;
+        const seed: SeedDeal = {
+          id: serverId,
+          state: serverState,
+          verdict: SYNCED_VERDICT,
+          scoreBreakdown: { rendite: 60, lage: 60, objekt: 55 },
+          createdSeq,
+        };
+        setSeedList((prev) =>
+          prev.some((s) => s.id === serverId) ? prev : [...prev, seed],
+        );
+        setStates((prev) => ({ ...prev, [serverId]: serverState }));
+        setSyncMeta((prev) => ({
+          ...prev,
+          [serverId]: { serverId, updatedAt, dirty: false },
+        }));
+      },
+      markPushed: (localId, serverId, updatedAt) =>
+        setSyncMeta((prev) =>
+          prev[localId]
+            ? { ...prev, [localId]: { serverId, updatedAt, dirty: false } }
+            : prev,
+        ),
+      removeTombstone: (localId) =>
+        setTombstones((prev) => prev.filter((t) => t.localId !== localId)),
+      removeCollabOp: (opId) =>
+        setCollabOps((prev) => prev.filter((o) => o.id !== opId)),
+    }),
+    [],
+  );
+
+  // Hand the adapter to the caller (root layout) once.
+  const bindSyncStoreRef = React.useRef(bindSyncStore);
+  bindSyncStoreRef.current = bindSyncStore;
+  React.useEffect(() => {
+    bindSyncStoreRef.current?.(syncStore);
+  }, [syncStore]);
+
+  // Persist every serialized slice on change (the caller debounces the write).
+  const onPersistRef = React.useRef(onPersist);
+  onPersistRef.current = onPersist;
+  React.useEffect(() => {
+    onPersistRef.current?.({
+      version: 1,
+      seedList,
+      states,
+      docs,
+      chats,
+      sortMode,
+      syncMeta,
+      tombstones,
+      collabOps,
+    });
+  }, [seedList, states, docs, chats, sortMode, syncMeta, tombstones, collabOps]);
 
   return <DealsContext.Provider value={value}>{children}</DealsContext.Provider>;
 }

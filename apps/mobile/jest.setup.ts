@@ -9,3 +9,10 @@ import '@testing-library/react-native';
 // react-native-gesture-handler ships a jest setup that mocks its native module.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('react-native-gesture-handler/jestSetup');
+
+// In-memory AsyncStorage so persistence round-trips work under jest without a
+// native module. The community package ships this official mock.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);

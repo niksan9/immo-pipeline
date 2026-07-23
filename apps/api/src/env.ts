@@ -33,7 +33,12 @@ export function loadEnv(): Env {
     trustedOrigins: [
       "http://localhost:8081",
       "http://localhost:3000",
+      // Expo dev client / Expo Go deep-link origin.
       "exp://",
+      // Standalone app scheme (app.json `scheme: "dealpilot"`). The Expo
+      // client sends this as its `expo-origin`; the expo() server plugin
+      // copies it onto `origin` so the origin check accepts the native app.
+      "dealpilot://",
     ],
   };
 }

@@ -87,7 +87,11 @@ export default function PipelineScreen() {
       </ScrollView>
 
       <View style={{ paddingBottom: insets.bottom }}>
-        <BottomNav onStub={showStub} onNewDeal={openCreate} />
+        <BottomNav
+          onStub={showStub}
+          onNewDeal={openCreate}
+          onProfile={() => router.push('/profile')}
+        />
       </View>
 
       <PipelineActionMenu

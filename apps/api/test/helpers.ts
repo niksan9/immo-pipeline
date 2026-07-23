@@ -14,7 +14,7 @@ const auth = createAuth({
   db,
   baseURL: BASE_URL,
   secret: "test-secret-0123456789abcdef",
-  trustedOrigins: [BASE_URL, "http://localhost:8081", "exp://"],
+  trustedOrigins: [BASE_URL, "http://localhost:8081", "exp://", "dealpilot://"],
 });
 const app = createApp({ auth, db });
 

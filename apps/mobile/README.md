@@ -13,6 +13,54 @@ pnpm --filter @dealpilot/mobile typecheck   # tsc --noEmit (strict)
 pnpm --filter @dealpilot/mobile export       # expo export --platform ios (bundle check)
 ```
 
+## Running the API + app together
+
+The app is **auth-gated** and **offline-first**: it requires a signed-in user at
+launch, keeps all state on-device, and syncs against the API in the background.
+
+```bash
+# 1. Terminal A — start the backend (Postgres + Hono API on :3000)
+pnpm --filter @dealpilot/api db:up        # start the dealpilot-db container (:5434)
+pnpm --filter @dealpilot/api db:migrate   # apply migrations (first run)
+pnpm --filter @dealpilot/api dev          # API on http://localhost:3000
+
+# 2. Terminal B — configure + start the app
+cp apps/mobile/.env.example apps/mobile/.env   # sets EXPO_PUBLIC_API_URL
+pnpm --filter @dealpilot/mobile start
+```
+
+`EXPO_PUBLIC_API_URL` must be reachable **from the device** (see `.env.example`
+for the simulator / emulator / physical-device hosts) and be an origin the API
+trusts (`apps/api/src/env.ts` → `trustedOrigins`). On first launch you sign up /
+sign in; the mock seed deals are POSTed to your account on the first sync.
+
+### Auth + offline-first sync
+
+- **Auth** — `better-auth` Expo client (`src/lib/auth-client.ts`), email +
+  password, session persisted in `expo-secure-store` (the plugin default). The
+  root layout gates on the session: signed-out → `/(auth)/sign-in` (+ sign-up),
+  signed-in → the app (`src/lib/AuthGate.tsx`). The API adds the `@better-auth/expo`
+  server plugin and trusts the `dealpilot://` scheme + `exp://` dev origins.
+- **Persistence** — every store slice (deal list, `DealState`s, docs, chats,
+  sort mode, sync bookkeeping) is serialized to `AsyncStorage` under a **per-user**
+  key (`src/data/persistence.ts`). The splash is held until fonts **and**
+  hydration finish. Mock seeds are used only when storage is empty (first run).
+- **Sync engine** (`src/lib/sync.ts`) — last-write-wins by `updatedAt`:
+  - on launch/foreground (and a ~30 s interval while items are pending) it pulls
+    `GET /api/deals` + `GET /api/deals/:id`, merging server-newer deals in and
+    pushing local-newer/unpushed ones out;
+  - local mutations mark the deal dirty and debounce a push (`POST` new, `PUT`
+    changed, `DELETE` with a **tombstone** so a pull can't resurrect a deletion);
+  - **offline** is inferred from `fetch` failures (no NetInfo dependency) —
+    failed work stays queued and retries on the next foreground / interval tick;
+  - collaborator add/remove is queued to the collaborators endpoints (inherently
+    server-side; offline → queued);
+  - **docs & chats slices are device-local only** — the API has no endpoints for
+    them yet, so they are intentionally not synced.
+- **Sign-out** clears the session only; on-device data is left intact. A minimal
+  **Profil** screen shows the email, the sync status (synced / pending / offline
+  + last-sync time) and the sign-out button.
+
 ## Project structure
 
 ```
@@ -115,6 +163,7 @@ The one display-only override is the MFH's "teilverm." occupancy word — core's
   deferred — only measure-driven adjustments mark a year, matching core's
   `ScheduleRow.adjusted`. Adding manual overrides needs a per-year input model in
   the store and would inflate this slice.
-- Bottom-nav **Markt**, **Profil**, and central **+** are non-functional stubs
-  (surface a "bald verfügbar" toast).
+- Bottom-nav **Markt** is a non-functional stub (surfaces a "bald verfügbar"
+  toast). **Profil** now opens a real screen (email · sync status · sign-out);
+  the central **+** opens the "Deal anlegen" overlay.
 - The Pipeline **⋮** action menu (sort Score/Kaufpreis/Datum) is a stub toast.
